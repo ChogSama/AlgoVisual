@@ -16,16 +16,14 @@ function BubbleSortVisualizer() {
     // Bubble Sort Animation
     const bubbleSort = async () => {
         setRunning(true);
-        let arr = [...array];
-        for (let i = 0; i < arr.length - 1; i++) {
-            for (let j = 0; j < arr.length - i - 1; j++) {
-                if (arr[j] > arr[j + 1]) {
-                    [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-                    setArray([...arr]);
-                    await new Promise((r) => setTimeout(r, 300)); // animation delay
-                }
-            }
-        }
+        const response = await fetch("http://localhost:5000/api/bubble-sort", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ array }),
+        });
+        const result = await response.json();
+        setArray(result.sortedArray);
+        console.log(`Swaps: ${result.swaps}, Comparisons: ${result.comparisons}, Time Complexity: ${result.timeComplexity}`);
         setRunning(false);
     };
 
