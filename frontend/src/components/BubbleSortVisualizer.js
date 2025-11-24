@@ -25,8 +25,15 @@ function BubbleSortVisualizer() {
             body: JSON.stringify({ array }),
         });
         const result = await response.json();
-        setArray(result.sortedArray);
-        console.log(`Swaps: ${result.swaps}, Comparisons: ${result.comparisons}, Time Complexity: ${result.timeComplexity}`);
+        const { frames, swaps, comparisons } = result;
+
+        // Animate frames
+        for (let i = 0; i < frames.length; i++) {
+            setArray(frames[i]);
+            await new Promise(resolve => setTimeout(resolve, speed));
+        }
+
+        console.log(`Swaps: ${swaps}, Comparisons: ${comparisons}, Time Complexity: ${result.timeComplexity}`);
         setRunning(false);
     };
 

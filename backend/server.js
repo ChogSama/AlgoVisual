@@ -13,6 +13,9 @@ app.post("/api/bubble-sort", (req, res) => {
     let swaps = 0;
     let comparisons = 0;
 
+    let frames = [];
+    frames.push([...arr]); // initial frame
+
     for (let i = 0; i < arr.length - 1; i++) {
         for (let j = 0; j < arr.length - i - 1; j++) {
             comparisons++;
@@ -20,10 +23,11 @@ app.post("/api/bubble-sort", (req, res) => {
                 [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
                 swaps++;
             }
+            frames.push([...arr]); // record each step
         }
     }
 
-    res.json({ sortedArray: arr, swaps, comparisons, timeComplexity: "O(n^2)" });
+    res.json({ frames, swaps, comparisons, timeComplexity: "O(n^2)" });
 });
 
 app.get('/', (req, res) => {
