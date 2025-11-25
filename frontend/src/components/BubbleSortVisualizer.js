@@ -6,7 +6,7 @@ function BubbleSortVisualizer() {
     const [running, setRunning] = useState(false);
     const [arraySize, setArraySize] = useState(10);
     const [speed, setSpeed] = useState(50); // ms
-    const [algorithm, setAlgorithm] = useState("bubbleSort");
+    const [algorithm, setAlgorithm] = useState("bubble");
 
     // Generate random array
     const generateArray = () => {
@@ -16,30 +16,34 @@ function BubbleSortVisualizer() {
     setArray(newArr);
     };
 
-    // Bubble Sort Animation
-    const bubbleSort = async () => {
+    // All Sort Animation
+    const startSort = async () => {
         setRunning(true);
-        const response = await fetch("http://localhost:5000/api/bubble-sort", {
+        const map = {
+            bubble: "bubble-sort",
+            merge: "merge-sort",
+            quick: "quick-sort"
+        };
+        const response = await fetch(`http://localhost:5000/api/${map[algorithm]}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ array }),
         });
         const result = await response.json();
-        const { frames, swaps, comparisons } = result;
+        const { frames } = result;
 
         // Animate frames
-        for (let i = 0; i < frames.length; i++) {
-            setArray(frames[i]);
+        for (let frame of frames) {
+            setArray(frame);
             await new Promise(resolve => setTimeout(resolve, speed));
         }
 
-        console.log(`Swaps: ${swaps}, Comparisons: ${comparisons}, Time Complexity: ${result.timeComplexity}`);
+        console.log(result);
         setRunning(false);
     };
 
     return (
         <div className="visualizer-container">
-            <h2 className="visualizer-title">Bubble Sort Visualizer</h2>
             <div className="array-container">
                 {array.map((num, idx) => (
                     <div
@@ -77,9 +81,9 @@ function BubbleSortVisualizer() {
                     onChange={(e) => setAlgorithm(e.target.value)}
                     disabled={running}
                 >
-                    <option value="bubbleSort">Bubble Sort</option>
-                    <option value="mergeSort">Merge Sort</option>
-                    <option value="quickSort">Quick Sort</option>
+                    <option value="bubble">Bubble Sort</option>
+                    <option value="merge">Merge Sort</option>
+                    <option value="quick">Quick Sort</option>
                 </select>
             </div>
 
@@ -88,7 +92,7 @@ function BubbleSortVisualizer() {
             </button>
             <button 
                 className="button"
-                onClick={bubbleSort}
+                onClick={startSort}
                 disabled={running || array.length === 0}
             >
                 Start Bubble Sort

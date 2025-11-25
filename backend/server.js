@@ -72,6 +72,44 @@ app.post("/api/merge-sort", (req, res) => {
     res.json({ frames, comparisons, timeComplexity: "O(n log n)", sortedArray: sorted });
 });
 
+app.post("/api/quick-sort", (req, res) => {
+    const { array } = req.body;
+    let frames = [];
+    let comparisons = 0;
+
+    const quickSort = (arr, left, right) => {
+        if (left < right) {
+            let pivotIndex = partition(arr, left, right);
+            quickSort(arr, left, pivotIndex - 1);
+            quickSort(arr, pivotIndex + 1, right);
+        }
+        return arr;
+    };
+
+    const partition = (arr, left, right) => {
+        let pivot = arr[right];
+        let i = left - 1;
+
+        for (let j = left; j < right; j++) {
+            comparisons++;
+            if (arr[j] < pivot) {
+                i++;
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+                frames.push([...arr]);
+            }
+        }
+
+        [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+        frames.push([...arr]);
+        return i + 1;
+    };
+
+    let arr = [...array];
+    quickSort(arr, 0, arr.length - 1);
+
+    res.json({ frames, comparisons, timeComplexity: "O(n log n)", sortedArray: arr });
+});
+
 app.get('/', (req, res) => {
     res.send('AlgoVisual Backend Running');
 });
