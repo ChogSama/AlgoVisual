@@ -8,7 +8,7 @@ function App() {
   return (
     <div className="app-container">
       <h1 className="app-title">AlgoVisual</h1>
-      <BubbleSortVisualizer algorithm={algorithm} />
+      <BubbleSortVisualizer />
     </div>
   );
 }

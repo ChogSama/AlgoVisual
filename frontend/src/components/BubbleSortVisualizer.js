@@ -5,8 +5,11 @@ function BubbleSortVisualizer() {
     const [array, setArray] = useState([]);
     const [running, setRunning] = useState(false);
     const [arraySize, setArraySize] = useState(10);
-    const [speed, setSpeed] = useState(50); // ms
+    const [speed, setSpeed] = useState(50);
     const [algorithm, setAlgorithm] = useState("bubble");
+    const [swaps, setSwaps] = useState(0);
+    const [comparisons, setComparisons] = useState(0);
+    const [timeComplexity, setTimeComplexity] = useState("");
 
     // Generate random array
     const generateArray = () => {
@@ -14,11 +17,19 @@ function BubbleSortVisualizer() {
             Math.floor(Math.random() * 100) + 5
         );
     setArray(newArr);
+    setSwaps(0);
+    setComparisons(0);
+    setTimeComplexity("");
     };
 
     // All Sort Animation
     const startSort = async () => {
+        if (running) return;
         setRunning(true);
+        // Reset metrics
+        setSwaps(0);
+        setComparisons(0);
+        setTimeComplexity("");
         const map = {
             bubble: "bubble-sort",
             merge: "merge-sort",
@@ -30,13 +41,19 @@ function BubbleSortVisualizer() {
             body: JSON.stringify({ array }),
         });
         const result = await response.json();
-        const { frames } = result;
+        const { frames, timeComplexity } = result;
 
         // Animate frames
-        for (let frame of frames) {
-            setArray(frame);
+        for (let i = 0; i < frames.length; i++) {
+            const frame = frames[i];
+            if (!frame || !frame.array) continue;
+            setArray(frame.array);
+            setSwaps(frame.swaps);
+            setComparisons(frame.comparisons);
             await new Promise(resolve => setTimeout(resolve, speed));
         }
+
+        setTimeComplexity(result.timeComplexity || "-");
 
         console.log(result);
         setRunning(false);
@@ -44,6 +61,22 @@ function BubbleSortVisualizer() {
 
     return (
         <div className="visualizer-container">
+
+            <div className="metrics-panel">
+                <div className="metric-box">
+                    <label>Swaps</label>
+                    <span>{swaps}</span>
+                </div>
+                <div className="metric-box">
+                    <label>Comparisons</label>
+                    <span>{comparisons}</span>
+                </div>
+                <div className="metric-box">
+                    <label>Time Complexity</label>
+                    <span>{timeComplexity || "-"}</span>
+                </div>
+            </div>
+
             <div className="array-container">
                 {array.map((num, idx) => (
                     <div
@@ -95,7 +128,7 @@ function BubbleSortVisualizer() {
                 onClick={startSort}
                 disabled={running || array.length === 0}
             >
-                Start Bubble Sort
+                Start {algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort
             </button>
         </div>
     );
