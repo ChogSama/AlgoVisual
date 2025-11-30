@@ -43,7 +43,7 @@ function BubbleSortVisualizer() {
             body: JSON.stringify({ array }),
         });
         const result = await response.json();
-        const { frames, timeComplexity } = result;
+        const { frames } = result;
 
         // Animate frames
         for (let i = 0; i < frames.length; i++) {
