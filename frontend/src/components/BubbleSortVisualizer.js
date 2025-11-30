@@ -24,6 +24,24 @@ function BubbleSortVisualizer() {
     setHighlight({ i: null, j: null, swapped: false });
     };
 
+    const flashSorted = async () => {
+        const duration = 500;
+        setHighlight({
+            region: {l: 0, r: array.length - 1},
+            color: "green"
+        });
+        await new Promise(resolve => setTimeout(resolve, duration));
+
+        setHighlight({
+            i: null,
+            j: null,
+            swapped: false,
+            region: null,
+            leftIndex: null,
+            rightIndex: null
+        });
+    };
+
     // All Sort Animation
     const startSort = async () => {
         if (running) return;
@@ -56,14 +74,7 @@ function BubbleSortVisualizer() {
             await new Promise(resolve => setTimeout(resolve, speed));
         }
 
-        setHighlight({
-            i: null,
-            j: null,
-            swapped: false,
-            region: null,
-            leftIndex: null,
-            rightIndex: null
-        })
+        await flashSorted();
 
         setTimeComplexity(result.timeComplexity || "-");
 
@@ -73,6 +84,10 @@ function BubbleSortVisualizer() {
 
     function getBarColor(index, h) {
         if (!h) return "#4ea3ff";
+
+        if (h.color === "green" && h.region && index >= h.region.l && index <= h.region.r) {
+            return "green";
+        }
 
         // Highlight comparisons and swaps
         if (h.i !== undefined && h.j !== undefined) {
