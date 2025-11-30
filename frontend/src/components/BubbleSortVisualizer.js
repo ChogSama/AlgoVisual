@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import "./BubbleSortVisualizer.css";
 
 function BubbleSortVisualizer() {
@@ -11,6 +11,9 @@ function BubbleSortVisualizer() {
     const [comparisons, setComparisons] = useState(0);
     const [timeComplexity, setTimeComplexity] = useState("");
     const [highlight, setHighlight] = useState({ i: null, j: null, swapped: false });
+    const [paused, setPaused] = useState(false);
+    const [frames, setFrames] = useState([]);
+    const pausedRef = useRef(paused);
 
     // Generate random array
     const generateArray = () => {
@@ -42,6 +45,19 @@ function BubbleSortVisualizer() {
         });
     };
 
+    const waitForResume = async () => {
+        while (pausedRef.current) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    };
+
+    const togglePause = () => {
+        setPaused(prev => {
+            pausedRef.current = !prev;
+            return !prev;
+        });
+    };
+
     // All Sort Animation
     const startSort = async () => {
         if (running) return;
@@ -62,6 +78,7 @@ function BubbleSortVisualizer() {
         });
         const result = await response.json();
         const { frames } = result;
+        setFrames(frames);
 
         // Animate frames
         for (let i = 0; i < frames.length; i++) {
@@ -71,6 +88,7 @@ function BubbleSortVisualizer() {
             setSwaps(frame.swaps);
             setComparisons(frame.comparisons);
             setHighlight(frame.highlight || { i: null, j: null, swapped: false });
+            await waitForResume();
             await new Promise(resolve => setTimeout(resolve, speed));
         }
 
@@ -186,6 +204,13 @@ function BubbleSortVisualizer() {
                 disabled={running || array.length === 0}
             >
                 Start {algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort
+            </button>
+            <button
+                className="button"
+                onClick={togglePause}
+                disabled={!running || frames.length === 0}
+            >
+                {paused ? "Resume" : "Pause"}
             </button>
         </div>
     );
