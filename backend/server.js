@@ -15,11 +15,12 @@ app.post("/api/bubble-sort", (req, res) => {
 
     let frames = [];
 
-    const pushFrame = () => {
+    const pushFrame = (i = null, j = null, swapped = false) => {
         frames.push({
             array: [...arr],
             swaps,
-            comparisons
+            comparisons,
+            highlight: { i, j, swapped }
         });
     };
 
@@ -28,11 +29,12 @@ app.post("/api/bubble-sort", (req, res) => {
     for (let i = 0; i < arr.length - 1; i++) {
         for (let j = 0; j < arr.length - i - 1; j++) {
             comparisons++;
+            pushFrame(j, j + 1, false);
             if (arr[j] > arr[j + 1]) {
                 [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
                 swaps++;
+                pushFrame(j, j + 1, true);
             }
-            pushFrame(); // record each step
         }
     }
 
@@ -41,110 +43,154 @@ app.post("/api/bubble-sort", (req, res) => {
 
 app.post("/api/merge-sort", (req, res) => {
     const { array } = req.body;
+    let arr = [...array];
     let frames = [];
     let comparisons = 0;
 
-    const pushFrame = (arr) => {
+    const pushFrame = (highlight = {}) => {
         frames.push({
             array: [...arr],
             swaps: 0, // Merge sort has no swaps
-            comparisons
+            comparisons,
+            highlight
         });
     };
 
-    const mergeSort = (arr, start, end) => {
-        if (start >= end) return [arr[start]];
-
-        const mid = Math.floor((start + end) / 2);
-        const left = mergeSort(arr, start, mid);
-        const right = mergeSort(arr, mid + 1, end);
-        return merge(left, right, start, end);
+    const mergeSort = (l, r) => {
+        if (l >= r) return;
+        const mid = Math.floor((l + r) / 2);
+        mergeSort(l, mid);
+        mergeSort(mid + 1, r);
+        merge(l, mid, r);
     };
 
-    const merge = (left, right, start, end) => {
-        let result = [];
-        let i = 0, j = 0;
+    const merge = (l, m, r) => {
+        let left = arr.slice(l, m + 1);
+        let right = arr.slice(m + 1, r + 1);
+        let i = 0, j = 0, k = l;
 
         while (i < left.length && j < right.length) {
             comparisons++;
 
+            pushFrame({
+                region: {l, m, r},
+                leftIndex: l + i,
+                rightIndex: m + 1 + j,
+                writeIndex: k
+            });
+
             if (left[i] < right[j]) {
-                result.push(left[i]);
+                arr[k] = left[i];
                 i++;
             } else {
-                result.push(right[j]);
+                arr[k] = right[j];
                 j++;
             }
 
-            const partial = [
-                ...result,
-                ...left.slice(i),
-                ...right.slice(j),
-            ];
-
-            let mergedFrame = [...array];
-            mergedFrame.splice(start, partial.length, ...partial);
-            pushFrame(mergedFrame);
+            pushFrame({
+                region: {l, m, r},
+                leftIndex: l + i,
+                rightIndex: m + 1 + j,
+                writeIndex: k
+            });
+            k++;
         }
 
-        const merged = [...result, ...left.slice(i), ...right.slice(j)];
+        while (i < left.length) {
+            arr[k] = left[i];
+            pushFrame({
+                region: {l, m, r},
+                leftIndex: l + i,
+                rightIndex: null,
+                writeIndex: k
+            });
+            i++;
+            k++;
+        }
 
-        let finalFrame = [...array];
-        finalFrame.splice(start, merged.length, ...merged);
-        pushFrame(finalFrame);
-
-        return merged;
+        while (j < right.length) {
+            arr[k] = right[j];
+            pushFrame({
+                region: {l, m, r},
+                leftIndex: null,
+                rightIndex: m + 1 + j,
+                writeIndex: k
+            });
+            j++;
+            k++;
+        }
     };
 
-    mergeSort([...array], 0, array.length - 1);
+    pushFrame();
+    mergeSort(0, arr.length - 1);
 
     res.json({ frames, timeComplexity: "O(n log n)" });
 });
 
 app.post("/api/quick-sort", (req, res) => {
     const { array } = req.body;
+    let arr = [...array];
     let frames = [];
     let comparisons = 0;
     let swaps = 0;
 
-    const pushFrame = (arr) => {
+    const pushFrame = (highlight = {}) => {
         frames.push({
             array: [...arr],
             swaps,
-            comparisons
+            comparisons,
+            highlight
         });
     };
 
-    const quickSort = (arr, left, right) => {
-        if (left < right) {
-            let pivotIndex = partition(arr, left, right);
-            quickSort(arr, left, pivotIndex - 1);
-            quickSort(arr, pivotIndex + 1, right);
-        }
-        return arr;
-    };
+    const quickSort = (l, r) => {
+        if (l >= r) return;
+        let pivotIndex = r;
+        let pivot = arr[pivotIndex];
+        let i = l - 1;
 
-    const partition = (arr, left, right) => {
-        let pivot = arr[right];
-        let i = left - 1;
+        pushFrame({
+            region: {l, r},
+            rightIndex: pivotIndex
+        });
 
-        for (let j = left; j < right; j++) {
+        for (let j = l; j < r; j++) {
             comparisons++;
+            pushFrame({
+                region: {l, r},
+                leftIndex: j,
+                rightIndex: pivotIndex
+            });
+
             if (arr[j] < pivot) {
                 i++;
                 [arr[i], arr[j]] = [arr[j], arr[i]];
-                pushFrame(arr);
+                swaps++;
+                pushFrame({
+                    i,
+                    j,
+                    swapped: true,
+                    region: {l, r},
+                    rightIndex: pivotIndex
+                });
             }
         }
 
-        [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
-        pushFrame(arr);
-        return i + 1;
+        [arr[i + 1], arr[pivotIndex]] = [arr[pivotIndex], arr[i + 1]];
+        swaps++;
+        pushFrame({
+            i: i + 1,
+            j: pivotIndex,
+            swapped: true
+        });
+
+        const pivotFinal = i + 1;
+        quickSort(l, pivotFinal - 1);
+        quickSort(pivotFinal + 1, r);
     };
 
-    let arr = [...array];
-    pushFrame(arr);
-    quickSort(arr, 0, arr.length - 1);
+    pushFrame();
+    quickSort(0, arr.length - 1);
 
     res.json({ frames, timeComplexity: "O(n log n)" });
 });

@@ -10,6 +10,7 @@ function BubbleSortVisualizer() {
     const [swaps, setSwaps] = useState(0);
     const [comparisons, setComparisons] = useState(0);
     const [timeComplexity, setTimeComplexity] = useState("");
+    const [highlight, setHighlight] = useState({ i: null, j: null, swapped: false });
 
     // Generate random array
     const generateArray = () => {
@@ -20,6 +21,7 @@ function BubbleSortVisualizer() {
     setSwaps(0);
     setComparisons(0);
     setTimeComplexity("");
+    setHighlight({ i: null, j: null, swapped: false });
     };
 
     // All Sort Animation
@@ -50,14 +52,51 @@ function BubbleSortVisualizer() {
             setArray(frame.array);
             setSwaps(frame.swaps);
             setComparisons(frame.comparisons);
+            setHighlight(frame.highlight || { i: null, j: null, swapped: false });
             await new Promise(resolve => setTimeout(resolve, speed));
         }
+
+        setHighlight({
+            i: null,
+            j: null,
+            swapped: false,
+            region: null,
+            leftIndex: null,
+            rightIndex: null
+        })
 
         setTimeComplexity(result.timeComplexity || "-");
 
         console.log(result);
         setRunning(false);
     };
+
+    function getBarColor(index, h) {
+        if (!h) return "#4ea3ff";
+
+        // Highlight comparisons and swaps
+        if (h.i !== undefined && h.j !== undefined) {
+            if (index === h.i || index === h.j) {
+                return h.swapped ? "red" : "yellow";
+            }
+        }
+
+        // Highlight regions for merge and quick sort
+        if (h.region && index >= h.region.l && index <= h.region.r) {
+            return "rgba(0, 150, 255, 0.25)";
+        }
+
+        // Highlight left and right indices
+        if (h.leftIndex === index) {
+            return "yellow";
+        }
+
+        if (h.rightIndex === index) {
+            return "orange";
+        }
+
+        return "#4ea3ff";
+    }
 
     return (
         <div className="visualizer-container">
@@ -82,7 +121,10 @@ function BubbleSortVisualizer() {
                     <div
                         key={idx}
                         className="array-bar"
-                        style={{ height: `${num * 3}px` }}
+                        style={{
+                            height: `${num * 3}px`,
+                            backgroundColor: getBarColor(idx, highlight)
+                        }}
                     ></div>
                 ))}
             </div>

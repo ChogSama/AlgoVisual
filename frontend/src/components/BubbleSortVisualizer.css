@@ -20,8 +20,18 @@
 
 .array-bar {
     width: 20px;
-    background-color: steelblue;
-    transition: all 0.3s ease;
+    margin: 0 2px;
+    display: inline-block;
+    background-color: #4ea3ff;
+    transition: background 0.1s, height 0.1s;
+}
+
+.bar-compare {
+    background: yellow !important;
+}
+
+.bar-swap {
+    background: red !important;
 }
 
 .button {
