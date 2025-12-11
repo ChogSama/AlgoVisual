@@ -13,6 +13,7 @@ function BubbleSortVisualizer() {
     const [highlight, setHighlight] = useState({ i: null, j: null, swapped: false });
     const [paused, setPaused] = useState(false);
     const [frames, setFrames] = useState([]);
+    const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
     const pausedRef = useRef(paused);
     const runningRef = useRef(false);
 
@@ -70,6 +71,28 @@ function BubbleSortVisualizer() {
         setTimeComplexity("");
     };
 
+    const applyFrame = (frame) => {
+        if (!frame) return;
+        setArray(frame.array);
+        setSwaps(frame.swaps);
+        setComparisons(frame.comparisons);
+        setHighlight(frame.highlight || { i: null, j: null, swapped: false });
+    };
+
+    const stepForward = () => {
+        if (!paused || currentFrameIndex >= frames.length - 1) return;
+        const nextIndex = currentFrameIndex + 1;
+        setCurrentFrameIndex(nextIndex);
+        applyFrame(frames[nextIndex]);
+    };
+
+    const stepBackward = () => {
+        if (!paused || currentFrameIndex <= 0) return;
+        const prevIndex = currentFrameIndex - 1;
+        setCurrentFrameIndex(prevIndex);
+        applyFrame(frames[prevIndex]);
+    };
+
     // All Sort Animation
     const startSort = async () => {
         if (running) return;
@@ -79,6 +102,7 @@ function BubbleSortVisualizer() {
         setSwaps(0);
         setComparisons(0);
         setTimeComplexity("");
+        setCurrentFrameIndex(0);
         const map = {
             bubble: "bubble-sort",
             merge: "merge-sort",
@@ -96,6 +120,7 @@ function BubbleSortVisualizer() {
         // Animate frames
         for (let i = 0; i < frames.length; i++) {
             if (!runningRef.current) return;
+            setCurrentFrameIndex(i);
             const frame = frames[i];
             if (!frame || !frame.array) continue;
             setArray(frame.array);
@@ -233,6 +258,20 @@ function BubbleSortVisualizer() {
                 disabled={!running}
             >
                 Stop
+            </button>
+            <button
+                className="button"
+                onClick={stepBackward}
+                disabled={!paused || currentFrameIndex === 0}
+            >
+                Step Backward
+            </button>
+            <button
+                className="button"
+                onClick={stepForward}
+                disabled={!paused || currentFrameIndex >= frames.length - 1}
+            >
+                Step Forward
             </button>
         </div>
     );
