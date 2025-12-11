@@ -14,6 +14,7 @@ function BubbleSortVisualizer() {
     const [paused, setPaused] = useState(false);
     const [frames, setFrames] = useState([]);
     const pausedRef = useRef(paused);
+    const runningRef = useRef(false);
 
     // Generate random array
     const generateArray = () => {
@@ -58,10 +59,22 @@ function BubbleSortVisualizer() {
         });
     };
 
+    const stopSort = () => {
+        setRunning(false);
+        runningRef.current = false;
+        setPaused(false);
+        pausedRef.current = false;
+
+        setFrames([]);
+        setHighlight({ i: null, j: null, swapped: false });
+        setTimeComplexity("");
+    };
+
     // All Sort Animation
     const startSort = async () => {
         if (running) return;
         setRunning(true);
+        runningRef.current = true;
         // Reset metrics
         setSwaps(0);
         setComparisons(0);
@@ -82,6 +95,7 @@ function BubbleSortVisualizer() {
 
         // Animate frames
         for (let i = 0; i < frames.length; i++) {
+            if (!runningRef.current) return;
             const frame = frames[i];
             if (!frame || !frame.array) continue;
             setArray(frame.array);
@@ -98,6 +112,7 @@ function BubbleSortVisualizer() {
 
         console.log(result);
         setRunning(false);
+        runningRef.current = false;
     };
 
     function getBarColor(index, h) {
@@ -211,6 +226,13 @@ function BubbleSortVisualizer() {
                 disabled={!running || frames.length === 0}
             >
                 {paused ? "Resume" : "Pause"}
+            </button>
+            <button
+                className="button"
+                onClick={stopSort}
+                disabled={!running}
+            >
+                Stop
             </button>
         </div>
     );
