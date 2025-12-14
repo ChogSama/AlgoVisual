@@ -204,3 +204,53 @@
     opacity: 0.4;
     cursor: not-allowed;
 }
+
+/* Legend */
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #333;
+}
+
+.legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+}
+
+.legend-color.default {
+    background: #4ea3ff;
+}
+
+.legend-color.compare {
+    background: yellow;
+}
+
+.legend-color.swap {
+    background: red;
+}
+
+.legend-color.region {
+    background: rgba(0, 150, 255, 0.25);
+}
+
+.legend-color.sorted {
+    background: green;
+}
+
+/* Keyboard hint */
+.hint {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 12px;
+}

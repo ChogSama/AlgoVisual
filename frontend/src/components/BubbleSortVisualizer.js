@@ -219,6 +219,37 @@ function BubbleSortVisualizer() {
         <div className="visualizer-container">
 
             <div className="metrics-panel">
+                <div className="legend">
+                    <div className="legend-item">
+                        <span className="legend-color default"></span>
+                        <span>Unsorted</span>
+                    </div>
+
+                    <div className="legend-item">
+                        <span className="legend-color compare"></span>
+                        <span>Comparing</span>
+                    </div>
+
+                    <div className="legend-item">
+                        <span className="legend-color swap"></span>
+                        <span>Swap</span>
+                    </div>
+
+                    <div className="legend-item">
+                        <span className="legend-color region"></span>
+                        <span>Active Region</span>
+                    </div>
+
+                    <div className="legend-item">
+                        <span className="legend-color sorted"></span>
+                        <span>Sorted</span>
+                    </div>
+                </div>
+
+                <div className="hint">
+                    Space: Pause/Resume · ← →: Step · S: Start · R: Generate
+                </div>
+
                 <div className="metric-box">
                     <label>Swaps</label>
                     <span>{swaps}</span>
