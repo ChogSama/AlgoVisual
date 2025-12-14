@@ -112,7 +112,13 @@ function BubbleSortVisualizer() {
 
     const applyFrame = (frame) => {
         if (!frame) return;
-        setArray(frame.array);
+
+        setArray(prev =>
+            JSON.stringify(prev) === JSON.stringify(frame.array)
+                ? prev
+                : frame.array
+        );
+
         setSwaps(frame.swaps);
         setComparisons(frame.comparisons);
         setHighlight(frame.highlight || { i: null, j: null, swapped: false });
@@ -130,6 +136,18 @@ function BubbleSortVisualizer() {
         const prevIndex = currentFrameIndex - 1;
         setCurrentFrameIndex(prevIndex);
         applyFrame(frames[prevIndex]);
+    };
+
+    const isSameFrame = (a, b) => {
+        if (!a || !b) return false;
+
+        // Compare arrays
+        for (let i = 0; i < a.array.length; i++) {
+            if (a.array[i] !== b.array[i]) return false;
+        }
+
+        // Compare highlights
+        return JSON.stringify(a.highlight) === JSON.stringify(b.highlight);
     };
 
     // All Sort Animation
@@ -153,23 +171,33 @@ function BubbleSortVisualizer() {
             body: JSON.stringify({ array }),
         });
         const result = await response.json();
-        const { frames } = result;
-        setFrames(frames);
+        const rawFrames = result.frames;
+        const optimized = [];
+
+        for (let i = 0; i < rawFrames.length; i++) {
+            if (i === 0 || !isSameFrame(rawFrames[i], rawFrames[i - 1])) {
+                optimized.push(rawFrames[i]);
+            }
+        }
+
+        setFrames(optimized);
 
         // Animate frames
-        for (let i = 0; i < frames.length; i++) {
+        for (let i = 0; i < optimized.length; i++) {
             if (!runningRef.current) return;
+
             setCurrentFrameIndex(i);
-            const frame = frames[i];
+            const frame = optimized[i];
             if (!frame || !frame.array) continue;
+
             setArray(frame.array);
             setSwaps(frame.swaps);
             setComparisons(frame.comparisons);
             setHighlight(frame.highlight || { i: null, j: null, swapped: false });
+
             await waitForResume();
 
             const extraDelay = frame.highlight?.swapped ? speed * 2 : 0;
-
             await new Promise(resolve => 
                 setTimeout(resolve, speed + extraDelay)
             );
