@@ -67,6 +67,7 @@ function BubbleSortVisualizer() {
         pausedRef.current = false;
 
         setFrames([]);
+        setCurrentFrameIndex(0);
         setHighlight({ i: null, j: null, swapped: false });
         setTimeComplexity("");
     };
@@ -273,6 +274,25 @@ function BubbleSortVisualizer() {
             >
                 Step Forward
             </button>
+            {frames.length > 0 && (
+                <div className="timeline">
+                    <label>
+                        Frame {currentFrameIndex + 1} / {frames.length}
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max={frames.length - 1}
+                        value={currentFrameIndex}
+                        disabled={running && !paused}
+                        onChange={(e) => {
+                            const idx = Number(e.target.value);
+                            setCurrentFrameIndex(idx);
+                            applyFrame(frames[idx]);
+                        }}
+                    /> 
+                </div>
+            )}
         </div>
     );
 }
