@@ -1,6 +1,7 @@
 .visualizer-container {
     padding: 16px;
     text-align: center;
+    align-items: center;
 }
 
 .visualizer-title {
@@ -130,4 +131,73 @@
     font-size: 22px;
     font-weight: bold;
     margin-top: 5px;
+}
+
+/* Timeline slider */
+.timeline {
+    margin: 16px auto;
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+}
+
+.timeline-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.timeline-track {
+    position: relative;
+    height: 6px;
+    background: #ddd;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+/* Progress fill */
+.timeline-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: #4ea3ff;
+    pointer-events: none;
+}
+
+/* Invisible range slider over the track */
+.timeline-slider {
+    position: absolute;
+    left: 0;
+    top: -5px;
+    width: 100%;
+    height: 16px;
+    background: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+/* Thumb */
+.timeline-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4ea3ff;
+    cursor: pointer;
+}
+
+.timeline-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4ea3ff;
+    border: none;
+    cursor: pointer;
+}
+
+/* Disabled */
+.timeline-slider:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }

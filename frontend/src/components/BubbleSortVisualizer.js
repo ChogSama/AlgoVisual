@@ -276,21 +276,32 @@ function BubbleSortVisualizer() {
             </button>
             {frames.length > 0 && (
                 <div className="timeline">
-                    <label>
+                    <div className="timeline-label">
                         Frame {currentFrameIndex + 1} / {frames.length}
-                    </label>
-                    <input
-                        type="range"
-                        min="0"
-                        max={frames.length - 1}
-                        value={currentFrameIndex}
-                        disabled={running && !paused}
-                        onChange={(e) => {
-                            const idx = Number(e.target.value);
-                            setCurrentFrameIndex(idx);
-                            applyFrame(frames[idx]);
-                        }}
-                    /> 
+                    </div>
+
+                    <div className="timeline-track">
+                        <input
+                            type="range"
+                            className="timeline-slider"
+                            min="0"
+                            max={frames.length - 1}
+                            value={currentFrameIndex}
+                            disabled={!paused}
+                            onChange={(e) => {
+                                const idx = Number(e.target.value);
+                                setCurrentFrameIndex(idx);
+                                applyFrame(frames[idx]);
+                            }}
+                        />
+                            
+                        <div
+                            className="timeline-progress"
+                            style={{
+                                width: `${(currentFrameIndex / (frames.length - 1)) * 100}%`
+                            }}
+                        />
+                    </div> 
                 </div>
             )}
         </div>
