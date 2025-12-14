@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./BubbleSortVisualizer.css";
 
 function BubbleSortVisualizer() {
@@ -16,6 +16,44 @@ function BubbleSortVisualizer() {
     const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
     const pausedRef = useRef(paused);
     const runningRef = useRef(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Ignore typing inside inputs/sliders/selects
+            if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) return;
+
+            switch (e.key) {
+                case " ": // Space -> Pause / Resume
+                    e.preventDefault();
+                    if (running) togglePause();
+                    break;
+
+                case "ArrowLeft": // <- Step backward
+                    if (paused) stepBackward();
+                    break;
+
+                case "ArrowRight": // -> Step forward
+                    if (paused) stepForward();
+                    break;
+                
+                case "r":
+                case "R": // R -> Generate array
+                    if (!running) generateArray();
+                    break;
+
+                case "s":
+                case "S": // S -> Start sort
+                    if (!running && array.length > 0) startSort();
+                    break;
+
+                default:
+                    break;
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [running, paused, currentFrameIndex, frames, array]);
 
     // Generate random array
     const generateArray = () => {
