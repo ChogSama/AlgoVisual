@@ -24,7 +24,10 @@
     margin: 0 2px;
     display: inline-block;
     background-color: #4ea3ff;
-    transition: background 0.1s, height 0.1s;
+    transition: 
+        height 0.15s ease,
+        background-color 0.12s ease,
+        transform 0.15s ease;
 }
 
 .bar-compare {

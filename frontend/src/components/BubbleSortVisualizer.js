@@ -167,7 +167,12 @@ function BubbleSortVisualizer() {
             setComparisons(frame.comparisons);
             setHighlight(frame.highlight || { i: null, j: null, swapped: false });
             await waitForResume();
-            await new Promise(resolve => setTimeout(resolve, speed));
+
+            const extraDelay = frame.highlight?.swapped ? speed * 2 : 0;
+
+            await new Promise(resolve => 
+                setTimeout(resolve, speed + extraDelay)
+            );
         }
 
         await flashSorted();
@@ -235,7 +240,11 @@ function BubbleSortVisualizer() {
                         className="array-bar"
                         style={{
                             height: `${num * 3}px`,
-                            backgroundColor: getBarColor(idx, highlight)
+                            backgroundColor: getBarColor(idx, highlight),
+                            transform:
+                                highlight?.swapped && (idx === highlight.i || idx === highlight.j)
+                                    ? "translateY(-8px)"
+                                    : "translateY(0)"
                         }}
                     ></div>
                 ))}
