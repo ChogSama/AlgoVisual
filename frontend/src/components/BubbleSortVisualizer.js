@@ -18,6 +18,11 @@ function BubbleSortVisualizer() {
     const runningRef = useRef(false);
 
     useEffect(() => {
+        stopSort();
+        setArray([]);
+    }, [algorithm]);
+
+    useEffect(() => {
         const handleKeyDown = (e) => {
             // Ignore typing inside inputs/sliders/selects
             if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) return;
@@ -152,7 +157,7 @@ function BubbleSortVisualizer() {
 
     // All Sort Animation
     const startSort = async () => {
-        if (running) return;
+        if (runningRef.current) return;
         setRunning(true);
         runningRef.current = true;
         // Reset metrics
@@ -278,6 +283,12 @@ function BubbleSortVisualizer() {
                     Space: Pause/Resume · ← →: Step · S: Start · R: Generate
                 </div>
 
+                {paused && (
+                    <div className="paused-indicator">
+                        ⏸ Paused
+                    </div>
+                )}
+
                 <div className="metric-box">
                     <label>Swaps</label>
                     <span>{swaps}</span>
@@ -317,7 +328,7 @@ function BubbleSortVisualizer() {
                     max="100"
                     value={arraySize}
                     onChange={(e) => setArraySize(Number(e.target.value))}
-                    disabled={running}
+                    disabled={running || paused}
                 />
 
                 <label>Speed: {speed} ms</label>
@@ -327,14 +338,14 @@ function BubbleSortVisualizer() {
                     max="200"
                     value={speed}
                     onChange={(e) => setSpeed(Number(e.target.value))}
-                    disabled={running}
+                    disabled={running || paused}
                 />
 
                 <label>Algorithm</label>
                 <select
                     value={algorithm}
                     onChange={(e) => setAlgorithm(e.target.value)}
-                    disabled={running}
+                    disabled={running || paused}
                 >
                     <option value="bubble">Bubble Sort</option>
                     <option value="merge">Merge Sort</option>
@@ -342,7 +353,7 @@ function BubbleSortVisualizer() {
                 </select>
             </div>
 
-            <button className="button" onClick={generateArray} disabled={running}>
+            <button className="button" onClick={generateArray} disabled={running || paused}>
                 Generate Array
             </button>
             <button 

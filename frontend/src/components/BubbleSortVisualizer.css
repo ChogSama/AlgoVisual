@@ -254,3 +254,10 @@
     color: #666;
     margin-bottom: 12px;
 }
+
+.paused-indicator {
+    font-size: 13px;
+    font-weight: bold;
+    color: #ff9800;
+    margin-bottom: 10px;
+}
