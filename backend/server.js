@@ -1,12 +1,16 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// Sample endpoint for Bubble Sort
+/* =======================
+   API ROUTES
+======================= */
+
+// Bubble Sort
 app.post("/api/bubble-sort", (req, res) => {
     const { array } = req.body;
     let arr = [...array];
@@ -41,6 +45,7 @@ app.post("/api/bubble-sort", (req, res) => {
     res.json({ frames, timeComplexity: "O(n^2)" });
 });
 
+// Merge Sort
 app.post("/api/merge-sort", (req, res) => {
     const { array } = req.body;
     let arr = [...array];
@@ -127,6 +132,7 @@ app.post("/api/merge-sort", (req, res) => {
     res.json({ frames, timeComplexity: "O(n log n)" });
 });
 
+// Quick Sort
 app.post("/api/quick-sort", (req, res) => {
     const { array } = req.body;
     let arr = [...array];
@@ -194,6 +200,20 @@ app.post("/api/quick-sort", (req, res) => {
 
     res.json({ frames, timeComplexity: "O(n log n)" });
 });
+
+/* =======================
+   SERVE REACT BUILD
+======================= */
+
+app.use(express.static(path.join(__dirname, "build")));
+
+app.use((req, res) => {
+    res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
+/* =======================
+   SERVE REACT BUILD
+======================= */
 
 app.get('/', (req, res) => {
     res.send('AlgoVisual Backend Running');
