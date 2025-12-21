@@ -3,10 +3,32 @@ require("dotenv").config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { error } = require("console");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const MAX_ARRAY_SIZE = 200;
+
+/* =======================
+   HELPER: INPUT VALIDATION
+======================= */
+function validateArray(array) {
+    if (!Array.isArray(array)) {
+        return "Input must be an array.";
+    }
+    if (array.length === 0) {
+        return "Array cannot be empty.";
+    }
+    if (array.length > MAX_ARRAY_SIZE) {
+        return `Array size must be <= ${MAX_ARRAY_SIZE}.`;
+    }
+    if (!array.every(n => typeof n === "number")) {
+        return "Array must contain only numbers.";
+    }
+    return null;
+}
 
 /* =======================
    API ROUTES
@@ -14,193 +36,182 @@ app.use(express.json());
 
 // Bubble Sort
 app.post("/api/bubble-sort", (req, res) => {
-    const { array } = req.body;
-    let arr = [...array];
-    let swaps = 0;
-    let comparisons = 0;
+    try {
+        const { array } = req.body;
+        const error = validateArray(array);
+        if (error) return res.status(400).json({ error });
 
-    let frames = [];
+        let arr = [...array];
+        let swaps = 0;
+        let comparisons = 0;
+        let frames = [];
 
-    const pushFrame = (i = null, j = null, swapped = false) => {
-        frames.push({
-            array: [...arr],
-            swaps,
-            comparisons,
-            highlight: { i, j, swapped }
-        });
-    };
+        const pushFrame = (i = null, j = null, swapped = false) => {
+            frames.push({
+                array: [...arr],
+                swaps,
+                comparisons,
+                highlight: { i, j, swapped }
+            });
+        };
 
-    pushFrame(); // initial frame
+        pushFrame();
 
-    for (let i = 0; i < arr.length - 1; i++) {
-        for (let j = 0; j < arr.length - i - 1; j++) {
-            comparisons++;
-            pushFrame(j, j + 1, false);
-            if (arr[j] > arr[j + 1]) {
-                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-                swaps++;
-                pushFrame(j, j + 1, true);
+        for (let i = 0; i < arr.length - 1; i++) {
+            for (let j = 0; j < arr.length - i - 1; j++) {
+                comparisons++;
+                pushFrame(j, j + 1, false);
+
+                if (arr[j] > arr[j + 1]) {
+                    [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                    swaps++;
+                    pushFrame(j, j + 1, true);
+                }
             }
         }
-    }
 
-    res.json({ frames, timeComplexity: "O(n^2)" });
+        res.json({ frames, timeComplexity: "O(n^2)" });
+    } catch (err) {
+        res.status(500).json({ error: "Bubble Sort failed." });
+    }
 });
 
 // Merge Sort
 app.post("/api/merge-sort", (req, res) => {
-    const { array } = req.body;
-    let arr = [...array];
-    let frames = [];
-    let comparisons = 0;
+    try {
+        const { array } = req.body;
+        const error = validateArray(array);
+        if (error) return res.status(400).json({ error });
 
-    const pushFrame = (highlight = {}) => {
-        frames.push({
-            array: [...arr],
-            swaps: 0, // Merge sort has no swaps
-            comparisons,
-            highlight
-        });
-    };
+        let arr = [...array];
+        let frames = [];
+        let comparisons = 0;
 
-    const mergeSort = (l, r) => {
-        if (l >= r) return;
-        const mid = Math.floor((l + r) / 2);
-        mergeSort(l, mid);
-        mergeSort(mid + 1, r);
-        merge(l, mid, r);
-    };
-
-    const merge = (l, m, r) => {
-        let left = arr.slice(l, m + 1);
-        let right = arr.slice(m + 1, r + 1);
-        let i = 0, j = 0, k = l;
-
-        while (i < left.length && j < right.length) {
-            comparisons++;
-
-            pushFrame({
-                region: {l, m, r},
-                leftIndex: l + i,
-                rightIndex: m + 1 + j,
-                writeIndex: k
+        const pushFrame = (highlight = {}) => {
+            frames.push({
+                array: [...arr],
+                swaps: 0, // Merge sort has no swaps
+                comparisons,
+                highlight
             });
+        };
 
-            if (left[i] < right[j]) {
-                arr[k] = left[i];
-                i++;
-            } else {
-                arr[k] = right[j];
-                j++;
+        const mergeSort = (l, r) => {
+            if (l >= r) return;
+            const m = Math.floor((l + r) / 2);
+            mergeSort(l, m);
+            mergeSort(m + 1, r);
+            merge(l, m, r);
+        };
+
+        const merge = (l, m, r) => {
+            let left = arr.slice(l, m + 1);
+            let right = arr.slice(m + 1, r + 1);
+            let i = 0, j = 0, k = l;
+
+            while (i < left.length && j < right.length) {
+                comparisons++;
+                pushFrame({
+                    region: {l, m, r},
+                    leftIndex: l + i,
+                    rightIndex: m + 1 + j,
+                    writeIndex: k
+                });
+
+                if (left[i] < right[j]) {
+                    arr[k++] = left[i++];
+                } else {
+                    arr[k++] = right[j++];
+                }
+
+                pushFrame({
+                    region: {l, m, r},
+                });
             }
 
-            pushFrame({
+            while (i < left.length) {
+                arr[k++] = left[i++];
+                pushFrame({
+                    region: {l, m, r},
+                });
+            }
+
+            while (j < right.length) {
+                arr[k++] = right[j++];
+                pushFrame({
                 region: {l, m, r},
-                leftIndex: l + i,
-                rightIndex: m + 1 + j,
-                writeIndex: k
-            });
-            k++;
-        }
+                });
+            }
+        };
 
-        while (i < left.length) {
-            arr[k] = left[i];
-            pushFrame({
-                region: {l, m, r},
-                leftIndex: l + i,
-                rightIndex: null,
-                writeIndex: k
-            });
-            i++;
-            k++;
-        }
+        pushFrame();
+        mergeSort(0, arr.length - 1);
 
-        while (j < right.length) {
-            arr[k] = right[j];
-            pushFrame({
-                region: {l, m, r},
-                leftIndex: null,
-                rightIndex: m + 1 + j,
-                writeIndex: k
-            });
-            j++;
-            k++;
-        }
-    };
-
-    pushFrame();
-    mergeSort(0, arr.length - 1);
-
-    res.json({ frames, timeComplexity: "O(n log n)" });
+        res.json({ frames, timeComplexity: "O(n log n)" });
+    } catch (err) {
+        res.status(500).json({ error: "Merge Sort failed." });
+    }
 });
 
 // Quick Sort
 app.post("/api/quick-sort", (req, res) => {
-    const { array } = req.body;
-    let arr = [...array];
-    let frames = [];
-    let comparisons = 0;
-    let swaps = 0;
+    try {
+        const { array } = req.body;
+        const error = validateArray(array);
+        if (error) return res.status(400).json({ error });
 
-    const pushFrame = (highlight = {}) => {
-        frames.push({
-            array: [...arr],
-            swaps,
-            comparisons,
-            highlight
-        });
-    };
+        let arr = [...array];
+        let frames = [];
+        let comparisons = 0;
+        let swaps = 0;
 
-    const quickSort = (l, r) => {
-        if (l >= r) return;
-        let pivotIndex = r;
-        let pivot = arr[pivotIndex];
-        let i = l - 1;
+        const pushFrame = (highlight = {}) => {
+            frames.push({
+                array: [...arr],
+                swaps,
+                comparisons,
+                highlight
+            });
+        };
 
-        pushFrame({
-            region: {l, r},
-            rightIndex: pivotIndex
-        });
+        const quickSort = (l, r) => {
+            if (l >= r) return;
+            let pivot = arr[r];
+            let i = l - 1;
 
-        for (let j = l; j < r; j++) {
-            comparisons++;
+            for (let j = l; j < r; j++) {
+                comparisons++;
+                if (arr[j] < pivot) {
+                    i++;
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                    swaps++;
+                    pushFrame({
+                        i,
+                        j,
+                        swapped: true
+                    });
+                }
+            }
+
+            [arr[i + 1], arr[r]] = [arr[r], arr[i + 1]];
+            swaps++;
             pushFrame({
-                region: {l, r},
-                leftIndex: j,
-                rightIndex: pivotIndex
+                i: i + 1,
+                j: r,
+                swapped: true
             });
 
-            if (arr[j] < pivot) {
-                i++;
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-                swaps++;
-                pushFrame({
-                    i,
-                    j,
-                    swapped: true,
-                    region: {l, r},
-                    rightIndex: pivotIndex
-                });
-            }
-        }
+            quickSort(l, i);
+            quickSort(i + 2, r);
+        };
 
-        [arr[i + 1], arr[pivotIndex]] = [arr[pivotIndex], arr[i + 1]];
-        swaps++;
-        pushFrame({
-            i: i + 1,
-            j: pivotIndex,
-            swapped: true
-        });
+        pushFrame();
+        quickSort(0, arr.length - 1);
 
-        const pivotFinal = i + 1;
-        quickSort(l, pivotFinal - 1);
-        quickSort(pivotFinal + 1, r);
-    };
-
-    pushFrame();
-    quickSort(0, arr.length - 1);
-
-    res.json({ frames, timeComplexity: "O(n log n)" });
+        res.json({ frames, timeComplexity: "O(n log n)" });
+    } catch (err) {
+        res.status(500).json({ error: "Quick Sort failed." });
+    }
 });
 
 /* =======================
@@ -208,14 +219,9 @@ app.post("/api/quick-sort", (req, res) => {
 ======================= */
 
 app.use(express.static(path.join(__dirname, "build")));
-
 app.use((req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));
 });
-
-/* =======================
-   SERVE REACT BUILD
-======================= */
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

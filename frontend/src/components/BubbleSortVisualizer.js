@@ -212,7 +212,6 @@ function BubbleSortVisualizer() {
 
         setTimeComplexity(result.timeComplexity || "-");
 
-        console.log(result);
         setRunning(false);
         runningRef.current = false;
     };
