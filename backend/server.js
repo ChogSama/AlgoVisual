@@ -3,10 +3,16 @@ require("dotenv").config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { error } = require("console");
 
 const app = express();
-app.use(cors());
+
+/* =======================
+   CONFIG
+======================= */
+
+app.use(cors({
+    origin: process.env.ClIENT_URL || "http://localhost:3000"
+}));
 app.use(express.json());
 
 const MAX_ARRAY_SIZE = 200;
@@ -18,15 +24,19 @@ function validateArray(array) {
     if (!Array.isArray(array)) {
         return "Input must be an array.";
     }
+
     if (array.length === 0) {
         return "Array cannot be empty.";
     }
+
     if (array.length > MAX_ARRAY_SIZE) {
         return `Array size must be <= ${MAX_ARRAY_SIZE}.`;
     }
+
     if (!array.every(n => typeof n === "number")) {
         return "Array must contain only numbers.";
     }
+
     return null;
 }
 
@@ -222,6 +232,10 @@ app.use(express.static(path.join(__dirname, "build")));
 app.use((req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));
 });
+
+/* =======================
+   START SERVER
+======================= */
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
