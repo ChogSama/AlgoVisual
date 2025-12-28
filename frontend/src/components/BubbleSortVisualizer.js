@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./BubbleSortVisualizer.css";
+import AlgorithmInfo from "./AlgorithmInfo.js";
 
 function BubbleSortVisualizer() {
     const [array, setArray] = useState([]);
@@ -20,6 +21,9 @@ function BubbleSortVisualizer() {
     useEffect(() => {
         stopSort();
         setArray([]);
+        setSwaps(0);
+        setComparisons(0);
+        setTimeComplexity("");
     }, [algorithm]);
 
     useEffect(() => {
@@ -249,6 +253,9 @@ function BubbleSortVisualizer() {
 
     return (
         <div className="visualizer-container">
+
+            {/* Algorithm description */}
+            <AlgorithmInfo algorithm={algorithm} />
 
             <div className="metrics-panel">
                 <div className="legend">
