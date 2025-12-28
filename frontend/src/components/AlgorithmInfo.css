@@ -1,0 +1,23 @@
+.algo-info {
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 14px 18px;
+  margin-top: 12px;
+  border-radius: 10px;
+  max-width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.algo-info h3 {
+  margin-bottom: 8px;
+  color: #4ea3ff;
+}
+
+.algo-info ul {
+  margin: 6px 0 10px;
+  padding-left: 18px;
+}
+
+.algo-info p {
+  margin: 4px 0;
+}

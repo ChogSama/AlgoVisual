@@ -15,6 +15,7 @@ function BubbleSortVisualizer() {
     const [paused, setPaused] = useState(false);
     const [frames, setFrames] = useState([]);
     const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+    const [finished, setFinished] = useState(false);
     const pausedRef = useRef(paused);
     const runningRef = useRef(false);
 
@@ -74,6 +75,7 @@ function BubbleSortVisualizer() {
     setComparisons(0);
     setTimeComplexity("");
     setHighlight({ i: null, j: null, swapped: false });
+    setFinished(false);
     };
 
     const flashSorted = async () => {
@@ -112,6 +114,7 @@ function BubbleSortVisualizer() {
         runningRef.current = false;
         setPaused(false);
         pausedRef.current = false;
+        setFinished(false);
 
         setFrames([]);
         setCurrentFrameIndex(0);
@@ -164,6 +167,7 @@ function BubbleSortVisualizer() {
         if (runningRef.current) return;
         setRunning(true);
         runningRef.current = true;
+        setFinished(false);
         // Reset metrics
         setSwaps(0);
         setComparisons(0);
@@ -218,6 +222,9 @@ function BubbleSortVisualizer() {
 
         setRunning(false);
         runningRef.current = false;
+        setPaused(false);
+        pausedRef.current = false;
+        setFinished(true);
     };
 
     function getBarColor(index, h) {
@@ -308,6 +315,12 @@ function BubbleSortVisualizer() {
                     <span>{timeComplexity || "-"}</span>
                 </div>
             </div>
+
+            {finished && (
+                <div className="finished-indicator">
+                    ✅ Sorting Complete
+                </div>
+            )}
 
             <div className="array-container">
                 {array.map((num, idx) => (

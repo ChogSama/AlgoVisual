@@ -1,3 +1,4 @@
+import "./AlgorithmInfo.css";
 const INFO = {
     bubble: {
         name: "Bubble Sort",

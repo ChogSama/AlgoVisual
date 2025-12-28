@@ -261,3 +261,10 @@
     color: #ff9800;
     margin-bottom: 10px;
 }
+
+.finished-indicator {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #2e7d32;
+}
