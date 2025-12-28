@@ -16,6 +16,8 @@ function BubbleSortVisualizer() {
     const [frames, setFrames] = useState([]);
     const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
     const [finished, setFinished] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
     const pausedRef = useRef(paused);
     const runningRef = useRef(false);
     const abortControllerRef = useRef(null);
@@ -167,6 +169,8 @@ function BubbleSortVisualizer() {
     const startSort = async () => {
         if (runningRef.current) return;
         setRunning(true);
+        setLoading(true);
+        setError("");
         runningRef.current = true;
         setFinished(false);
         // Reset metrics
@@ -194,14 +198,22 @@ function BubbleSortVisualizer() {
                 }
             );
 
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
             result = await response.json();
         } catch (err) {
             if (err.name !== "AbortError") {
-                console.error("Sort request failed:", err);
+                console.error(err);
+                setError("Failed to run sort. Is the backend running?");
             }
+            setRunning(false);
+            setLoading(false);
+            runningRef.current = false;
             return;
         }
-        
+
         const rawFrames = result.frames;
         const optimized = [];
 
@@ -243,6 +255,7 @@ function BubbleSortVisualizer() {
         setPaused(false);
         pausedRef.current = false;
         setFinished(true);
+        setLoading(false);
     };
 
     function getBarColor(index, h) {
@@ -400,7 +413,7 @@ function BubbleSortVisualizer() {
             <button 
                 className="button"
                 onClick={startSort}
-                disabled={running || array.length === 0}
+                disabled={running || loading || array.length === 0}
             >
                 Start {algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort
             </button>
@@ -432,6 +445,19 @@ function BubbleSortVisualizer() {
             >
                 Step Forward
             </button>
+
+            {loading && (
+                <div className="loading-indicator">
+                    ⏳ Loading frames from backend...
+                </div>
+            )}
+
+            {error && (
+                <div className="error-indicator">
+                    ❌ {error} and goon
+                </div>
+            )}
+
             {frames.length > 0 && (
                 <div className="timeline">
                     <div className="timeline-label">
