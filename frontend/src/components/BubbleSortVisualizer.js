@@ -181,6 +181,8 @@ function BubbleSortVisualizer() {
         };
         abortControllerRef.current = new AbortController();
 
+        let result;
+
         try {
             const response = await fetch(
                 `${process.env.REACT_APP_API_URL}/api/${map[algorithm]}`,
@@ -192,13 +194,14 @@ function BubbleSortVisualizer() {
                 }
             );
 
-            const result = await response.json();
+            result = await response.json();
         } catch (err) {
             if (err.name !== "AbortError") {
                 console.error("Sort request failed:", err);
             }
             return;
         }
+        
         const rawFrames = result.frames;
         const optimized = [];
 
