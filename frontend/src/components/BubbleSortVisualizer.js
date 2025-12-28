@@ -18,6 +18,7 @@ function BubbleSortVisualizer() {
     const [finished, setFinished] = useState(false);
     const pausedRef = useRef(paused);
     const runningRef = useRef(false);
+    const abortControllerRef = useRef(null);
 
     useEffect(() => {
         stopSort();
@@ -110,6 +111,11 @@ function BubbleSortVisualizer() {
     };
 
     const stopSort = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+
         setRunning(false);
         runningRef.current = false;
         setPaused(false);
@@ -125,12 +131,7 @@ function BubbleSortVisualizer() {
     const applyFrame = (frame) => {
         if (!frame) return;
 
-        setArray(prev =>
-            JSON.stringify(prev) === JSON.stringify(frame.array)
-                ? prev
-                : frame.array
-        );
-
+        setArray(frame.array);
         setSwaps(frame.swaps);
         setComparisons(frame.comparisons);
         setHighlight(frame.highlight || { i: null, j: null, swapped: false });
@@ -178,12 +179,26 @@ function BubbleSortVisualizer() {
             merge: "merge-sort",
             quick: "quick-sort"
         };
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/${map[algorithm]}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ array }),
-        });
-        const result = await response.json();
+        abortControllerRef.current = new AbortController();
+
+        try {
+            const response = await fetch(
+                `${process.env.REACT_APP_API_URL}/api/${map[algorithm]}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ array }),
+                    signal: abortControllerRef.current.signal
+                }
+            );
+
+            const result = await response.json();
+        } catch (err) {
+            if (err.name !== "AbortError") {
+                console.error("Sort request failed:", err);
+            }
+            return;
+        }
         const rawFrames = result.frames;
         const optimized = [];
 
@@ -258,6 +273,23 @@ function BubbleSortVisualizer() {
         return "#4ea3ff";
     }
 
+    const bars = React.useMemo(() => {
+        return array.map((num, idx) => (
+            <div
+                key={idx}
+                className="array-bar"
+                style={{
+                    height: `${num * 3}px`,
+                    backgroundColor: getBarColor(idx, highlight),
+                    transform:
+                        highlight?.swapped && (idx === highlight.i || idx === highlight.j)
+                            ? "translateY(-8px)"
+                            : "translateY(0)"
+                }}
+            />
+        ));
+    }, [array, highlight]);
+
     return (
         <div className="visualizer-container">
 
@@ -323,20 +355,7 @@ function BubbleSortVisualizer() {
             )}
 
             <div className="array-container">
-                {array.map((num, idx) => (
-                    <div
-                        key={idx}
-                        className="array-bar"
-                        style={{
-                            height: `${num * 3}px`,
-                            backgroundColor: getBarColor(idx, highlight),
-                            transform:
-                                highlight?.swapped && (idx === highlight.i || idx === highlight.j)
-                                    ? "translateY(-8px)"
-                                    : "translateY(0)"
-                        }}
-                    ></div>
-                ))}
+                {bars}
             </div>
 
             <div className="controls">
