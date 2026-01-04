@@ -16,6 +16,7 @@ app.use(cors({
 app.use(express.json());
 
 const MAX_ARRAY_SIZE = 200;
+const MAX_FRAMES = 5000;
 
 /* =======================
    HELPER: INPUT VALIDATION
@@ -57,12 +58,14 @@ app.post("/api/bubble-sort", (req, res) => {
         let frames = [];
 
         const pushFrame = (i = null, j = null, swapped = false) => {
-            frames.push({
-                array: [...arr],
-                swaps,
-                comparisons,
-                highlight: { i, j, swapped }
-            });
+            if (frames.length < MAX_FRAMES) {
+                frames.push({
+                    array: [...arr],
+                    swaps,
+                    comparisons,
+                    highlight: { i, j, swapped }
+                });
+            }
         };
 
         pushFrame();
@@ -98,12 +101,14 @@ app.post("/api/merge-sort", (req, res) => {
         let comparisons = 0;
 
         const pushFrame = (highlight = {}) => {
-            frames.push({
-                array: [...arr],
-                swaps: 0, // Merge sort has no swaps
-                comparisons,
-                highlight
-            });
+            if (frames.length < MAX_FRAMES) {
+                frames.push({
+                    array: [...arr],
+                    swaps: 0, // Merge sort has no swaps
+                    comparisons,
+                    highlight
+                });
+            }
         };
 
         const mergeSort = (l, r) => {
@@ -176,12 +181,14 @@ app.post("/api/quick-sort", (req, res) => {
         let swaps = 0;
 
         const pushFrame = (highlight = {}) => {
-            frames.push({
-                array: [...arr],
-                swaps,
-                comparisons,
-                highlight
-            });
+            if (frames.length < MAX_FRAMES) {
+                frames.push({
+                    array: [...arr],
+                    swaps,
+                    comparisons,
+                    highlight
+                });
+            }
         };
 
         const quickSort = (l, r) => {

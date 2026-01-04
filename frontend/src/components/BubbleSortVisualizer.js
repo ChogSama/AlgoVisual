@@ -125,6 +125,7 @@ function BubbleSortVisualizer() {
         }
 
         setRunning(false);
+        setLoading(false);
         runningRef.current = false;
         setPaused(false);
         pausedRef.current = false;
@@ -448,14 +449,14 @@ function BubbleSortVisualizer() {
             <button
                 className="button"
                 onClick={stepBackward}
-                disabled={!paused || currentFrameIndex === 0}
+                disabled={!paused || currentFrameIndex === 0 || frames.length === 0}
             >
                 Step Backward
             </button>
             <button
                 className="button"
                 onClick={stepForward}
-                disabled={!paused || currentFrameIndex >= frames.length - 1}
+                disabled={!paused || currentFrameIndex >= frames.length - 1 || frames.length === 0}
             >
                 Step Forward
             </button>
@@ -468,7 +469,7 @@ function BubbleSortVisualizer() {
 
             {error && (
                 <div className="error-indicator">
-                    ❌ {error} and goon
+                    ❌ {error}
                 </div>
             )}
 
