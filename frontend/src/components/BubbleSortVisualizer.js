@@ -18,6 +18,7 @@ function BubbleSortVisualizer() {
     const [finished, setFinished] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [showHelp, setShowHelp] = useState(false);
     const pausedRef = useRef(paused);
     const runningRef = useRef(false);
     const abortControllerRef = useRef(null);
@@ -68,17 +69,22 @@ function BubbleSortVisualizer() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [running, paused, currentFrameIndex, frames, array]);
 
+    useEffect(() => {
+        generateArray();
+    }, []);
+
     // Generate random array
     const generateArray = () => {
+        if (arraySize > 200) return;
         const newArr = Array.from({ length: arraySize }, () =>
             Math.floor(Math.random() * 100) + 5
         );
-    setArray(newArr);
-    setSwaps(0);
-    setComparisons(0);
-    setTimeComplexity("");
-    setHighlight({ i: null, j: null, swapped: false });
-    setFinished(false);
+        setArray(newArr);
+        setSwaps(0);
+        setComparisons(0);
+        setTimeComplexity("");
+        setHighlight({ i: null, j: null, swapped: false });
+        setFinished(false);
     };
 
     const flashSorted = async () => {
@@ -127,7 +133,6 @@ function BubbleSortVisualizer() {
         setFrames([]);
         setCurrentFrameIndex(0);
         setHighlight({ i: null, j: null, swapped: false });
-        setTimeComplexity("");
     };
 
     const applyFrame = (frame) => {
@@ -308,6 +313,9 @@ function BubbleSortVisualizer() {
 
     return (
         <div className="visualizer-container">
+            <h2 className="visualizer-title">
+                {algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort
+            </h2>
 
             {/* Algorithm description */}
             <AlgorithmInfo algorithm={algorithm} />
@@ -340,9 +348,11 @@ function BubbleSortVisualizer() {
                     </div>
                 </div>
 
-                <div className="hint">
-                    Space: Pause/Resume · ← →: Step · S: Start · R: Generate
-                </div>
+                {showHelp && (
+                    <div className="hint">
+                        Space: Pause/Resume · ← →: Step · S: Start · R: Generate
+                    </div>
+                )}
 
                 {paused && (
                     <div className="paused-indicator">
@@ -374,6 +384,10 @@ function BubbleSortVisualizer() {
                 {bars}
             </div>
 
+            <button className="button" onClick={() => setShowHelp(v => !v)}>
+                ❓ Shortcuts
+            </button>
+
             <div className="controls">
                 <label>Array Size: {arraySize}</label>
                 <input
@@ -382,7 +396,7 @@ function BubbleSortVisualizer() {
                     max="100"
                     value={arraySize}
                     onChange={(e) => setArraySize(Number(e.target.value))}
-                    disabled={running || paused}
+                    disabled={running || paused || loading}
                 />
 
                 <label>Speed: {speed} ms</label>
@@ -392,14 +406,14 @@ function BubbleSortVisualizer() {
                     max="200"
                     value={speed}
                     onChange={(e) => setSpeed(Number(e.target.value))}
-                    disabled={running || paused}
+                    disabled={running || paused || loading}
                 />
 
                 <label>Algorithm</label>
                 <select
                     value={algorithm}
                     onChange={(e) => setAlgorithm(e.target.value)}
-                    disabled={running || paused}
+                    disabled={running || paused || loading}
                 >
                     <option value="bubble">Bubble Sort</option>
                     <option value="merge">Merge Sort</option>
@@ -407,7 +421,7 @@ function BubbleSortVisualizer() {
                 </select>
             </div>
 
-            <button className="button" onClick={generateArray} disabled={running || paused}>
+            <button className="button" onClick={generateArray} disabled={running || paused || loading}>
                 Generate Array
             </button>
             <button 
