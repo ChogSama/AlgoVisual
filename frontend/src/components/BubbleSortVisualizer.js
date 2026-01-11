@@ -2,12 +2,28 @@ import React, { useState, useRef, useEffect } from "react";
 import "./BubbleSortVisualizer.css";
 import AlgorithmInfo from "./AlgorithmInfo.js";
 
+const getInitialSettings = () => {
+    try {
+        const raw = localStorage.getItem("algo-settings");
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
 function BubbleSortVisualizer() {
     const [array, setArray] = useState([]);
     const [running, setRunning] = useState(false);
-    const [arraySize, setArraySize] = useState(10);
-    const [speed, setSpeed] = useState(50);
-    const [algorithm, setAlgorithm] = useState("bubble");
+    const initialSettings = getInitialSettings();
+    const [arraySize, setArraySize] = useState(
+        initialSettings?.arraySize ?? 10
+    );
+    const [speed, setSpeed] = useState(
+        initialSettings?.speed ?? 50
+    );
+    const [algorithm, setAlgorithm] = useState(
+        initialSettings?.algorithm ?? "bubble"
+    );
     const [swaps, setSwaps] = useState(0);
     const [comparisons, setComparisons] = useState(0);
     const [timeComplexity, setTimeComplexity] = useState("");
@@ -72,6 +88,13 @@ function BubbleSortVisualizer() {
     useEffect(() => {
         generateArray();
     }, []);
+
+    useEffect(() => {
+        localStorage.setItem(
+            "algo-settings",
+            JSON.stringify({ arraySize, speed, algorithm })
+        );
+    }, [arraySize, speed, algorithm]);
 
     // Generate random array
     const generateArray = () => {
