@@ -250,12 +250,24 @@ function BubbleSortVisualizer() {
         } catch (err) {
             if (err.name !== "AbortError") {
                 console.error(err);
-                setError("Failed to run sort. Is the backend running?");
+                setError(
+                    err.message.includes("Invalid response")
+                        ? "Backend returned invalid data."
+                        : "Failed to run sort. Is the backend running?"
+                );
             }
             setRunning(false);
             setLoading(false);
             runningRef.current = false;
             return;
+        }
+
+        if (
+            !result ||
+            !Array.isArray(result.frames) ||
+            result.frames.length === 0
+        ) {
+            throw new Error("Invalid response from backend");
         }
 
         const rawFrames = result.frames;
@@ -293,7 +305,11 @@ function BubbleSortVisualizer() {
 
         await flashSorted();
 
-        setTimeComplexity(result.timeComplexity || "-");
+        setTimeComplexity(
+            typeof result.timeComplexity === "string"
+                ? result.timeComplexity
+                : "-"
+        );
 
         setRunning(false);
         runningRef.current = false;
