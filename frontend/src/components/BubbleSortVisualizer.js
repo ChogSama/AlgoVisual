@@ -127,9 +127,13 @@ function BubbleSortVisualizer() {
         setRunning(false);
         setLoading(false);
         runningRef.current = false;
+
         setPaused(false);
         pausedRef.current = false;
+
         setFinished(false);
+        setError("");
+        setTimeComplexity("");
 
         setFrames([]);
         setCurrentFrameIndex(0);
@@ -173,6 +177,17 @@ function BubbleSortVisualizer() {
 
     // All Sort Animation
     const startSort = async () => {
+        if (arraySize > 80) {
+            const ok = window.confirm(
+                "Large array may be slow. Continue?"
+            );
+            if (!ok) {
+                setRunning(false);
+                setLoading(false);
+                runningRef.current = false;
+                return;
+            }
+        }
         if (runningRef.current) return;
         setRunning(true);
         setLoading(true);
@@ -230,6 +245,7 @@ function BubbleSortVisualizer() {
         }
 
         setFrames(optimized);
+        setLoading(false);
 
         // Animate frames
         for (let i = 0; i < optimized.length; i++) {
@@ -349,7 +365,7 @@ function BubbleSortVisualizer() {
                     </div>
                 </div>
 
-                {showHelp && (
+                {showHelp && !running && !loading && (
                     <div className="hint">
                         Space: Pause/Resume · ← →: Step · S: Start · R: Generate
                     </div>
@@ -382,7 +398,13 @@ function BubbleSortVisualizer() {
             )}
 
             <div className="array-container">
-                {bars}
+                {array.length === 0 ? (
+                    <div className="empty-state">
+                        Generate an array to begin
+                    </div>
+                ) : (
+                    bars
+                )}
             </div>
 
             <button className="button" onClick={() => setShowHelp(v => !v)}>
@@ -422,7 +444,11 @@ function BubbleSortVisualizer() {
                 </select>
             </div>
 
-            <button className="button" onClick={generateArray} disabled={running || paused || loading}>
+            <button 
+                className="button"
+                onClick={generateArray}
+                disabled={running || paused || loading}
+            >
                 Generate Array
             </button>
             <button 
@@ -435,14 +461,14 @@ function BubbleSortVisualizer() {
             <button
                 className="button"
                 onClick={togglePause}
-                disabled={!running || frames.length === 0}
+                disabled={!running}
             >
                 {paused ? "Resume" : "Pause"}
             </button>
             <button
                 className="button"
                 onClick={stopSort}
-                disabled={!running}
+                disabled={!running && !loading}
             >
                 Stop
             </button>
@@ -470,6 +496,15 @@ function BubbleSortVisualizer() {
             {error && (
                 <div className="error-indicator">
                     ❌ {error}
+                    <div style={{ marginTop: "8px" }}>
+                        <button
+                            className="button"
+                            onClick={startSort}
+                            disabled={loading}
+                        >
+                            Retry
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -486,7 +521,7 @@ function BubbleSortVisualizer() {
                             min="0"
                             max={frames.length - 1}
                             value={currentFrameIndex}
-                            disabled={!paused}
+                            disabled={!paused || loading}
                             onChange={(e) => {
                                 const idx = Number(e.target.value);
                                 setCurrentFrameIndex(idx);
