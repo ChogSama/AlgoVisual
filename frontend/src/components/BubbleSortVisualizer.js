@@ -577,6 +577,14 @@ function BubbleSortVisualizer() {
                     </div> 
                 </div>
             )}
+
+            {loading && (
+                <div className="global-loading-overlay">
+                    <div className="loading-box">
+                        ⏳ Processing algorithm...
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
