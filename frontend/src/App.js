@@ -4,17 +4,12 @@ import BubbleSortVisualizer from './components/BubbleSortVisualizer.js';
 import ErrorBoundary from './components/ErrorBoundary.js';
 
 function App() {
-  const [theme, setTheme] = useState("dark");
-
-  // Load saved theme
-  useEffect(() => {
+  const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("theme");
-    if (saved === "light" || saved === "dark") {
-      setTheme(saved);
-    }
-  }, []);
+    return saved === "light" || saved === "dark" ? saved : "dark";
+  });
 
-  // Apply theme
+  // Apply theme + persist
   useEffect(() => {
     document.body.dataset.theme = theme;
     localStorage.setItem("theme", theme);
