@@ -58,18 +58,19 @@
     gap: 12px;
     margin-bottom: 16px;
     padding: 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 8px;
     width: 280px;
     margin-left: auto;
     margin-right: auto;
-    background-color: #f8f8f8;
+    background-color: var(--panel);
 }
 
 .controls label {
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 4px;
+    color: var(--text);
 }
 
 .controls input[type="range"] {
@@ -80,10 +81,11 @@
     padding: 6px 10px;
     font-size: 14px;
     border-radius: 6px;
-    border: 1px solid #aaa;
+    border: 1px solid var(--border);
     cursor: pointer;
     width: 100%;
-    background: white;
+    background: var(--panel);
+    color: var(--text);
 }
 
 .algo-selector {
@@ -119,7 +121,8 @@
 }
 
 .metric-box {
-    background: #f2f2f2;
+    background: var(--panel);
+    border: 1px solid var(--border);
     padding: 12px 20px;
     border-radius: 12px;
     text-align: center;
@@ -128,7 +131,7 @@
 
 .metric-box label {
     font-size: 14px;
-    color: #555;
+    color: var(--text-muted);
 }
 
 .metric-box span {
@@ -136,6 +139,7 @@
     font-size: 22px;
     font-weight: bold;
     margin-top: 5px;
+    color: var(--text);
 }
 
 /* Timeline slider */
@@ -148,7 +152,7 @@
 
 .timeline-label {
     font-size: 14px;
-    color: #666;
+    color: var(--text-muted);
     margin-bottom: 6px;
 }
 
@@ -221,7 +225,7 @@
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: #333;
+    color: var(--text);
 }
 
 .legend-color {
@@ -253,7 +257,7 @@
 /* Keyboard hint */
 .hint {
     font-size: 12px;
-    color: #666;
+    color: var(--text-muted);
     margin-bottom: 12px;
 }
 
@@ -336,7 +340,7 @@
 }
 
 .empty-state {
-    color: #777;
+    color: var(--text-muted);
     font-size: 14px;
     align-self: center;
 }

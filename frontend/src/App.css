@@ -1,10 +1,56 @@
+/* ===== Theme Variables ===== */
+body[data-theme="dark"] {
+  --bg: #0f1117;
+  --panel: #161a23;
+  --text: #e6e8ee;
+  --text-muted: #b3b8c5;
+  --accent: #4ea3ff;
+  --border: rgba(255, 255, 255, 0.12);
+}
+
+body[data-theme="light"] {
+  --bg: #f7f9fc;
+  --panel: #ffffff;
+  --text: #1e293b;
+  --accent: #2563eb;
+  --border: rgba(0, 0, 0, 0.1);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* ===== App Layout ===== */
 .app-container {
   text-align: center;
   margin-top: 16px;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
 }
 
 .app-title {
   font-size: 32px;
   font-weight: bold;
   margin-bottom: 16px;
+}
+
+/* ===== Theme Toggle Button ===== */
+.theme-toggle {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
 }

@@ -1,23 +1,30 @@
 .algo-info {
-  background: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--panel);
+  border: 1px solid var(--border);
   padding: 14px 18px;
   margin-top: 12px;
   border-radius: 10px;
   max-width: 320px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  color: var(--text);
 }
 
 .algo-info h3 {
   margin-bottom: 8px;
-  color: #4ea3ff;
+  color: var(--accent);
 }
 
 .algo-info ul {
   margin: 6px 0 10px;
   padding-left: 18px;
+  color: var(--text);
+}
+
+.algo-info li {
+  color: var(--text);
 }
 
 .algo-info p {
   margin: 4px 0;
+  color: var(--text-muted);
 }
