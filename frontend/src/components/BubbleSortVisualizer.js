@@ -38,6 +38,7 @@ function BubbleSortVisualizer() {
     const pausedRef = useRef(paused);
     const runningRef = useRef(false);
     const abortControllerRef = useRef(null);
+    const containerRef = useRef(null);
 
     useEffect(() => {
         stopSort();
@@ -350,6 +351,19 @@ function BubbleSortVisualizer() {
         return "#4ea3ff";
     }
 
+    const barWidth = React.useMemo(() => {
+        if (!containerRef.current || array.length === 0) return 10;
+        
+        const containerWidth = containerRef.current.clientWidth;
+        const gap = 2;
+        const maxBars = array.length;
+        
+        return Math.max(
+            2,
+            Math.floor(containerWidth / maxBars) - gap
+        );
+    }, [array.length]);
+
     const bars = React.useMemo(() => {
         return array.map((num, idx) => (
             <div
@@ -357,6 +371,7 @@ function BubbleSortVisualizer() {
                 className="array-bar"
                 style={{
                     height: `${num * 3}px`,
+                    width: `${barWidth}px`,
                     backgroundColor: getBarColor(idx, highlight),
                     transform:
                         highlight?.swapped && (idx === highlight.i || idx === highlight.j)
@@ -436,7 +451,7 @@ function BubbleSortVisualizer() {
                 </div>
             )}
 
-            <div className="array-container">
+            <div className="array-container" ref={containerRef}>
                 {array.length === 0 ? (
                     <div className="empty-state">
                         Generate an array to begin
