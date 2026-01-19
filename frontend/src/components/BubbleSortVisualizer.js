@@ -53,27 +53,33 @@ function BubbleSortVisualizer() {
             // Ignore typing inside inputs/sliders/selects
             if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) return;
 
-            switch (e.key) {
+            switch (e.key.toLowerCase()) {
                 case " ": // Space -> Pause / Resume
                     e.preventDefault();
                     if (running) togglePause();
                     break;
 
-                case "ArrowLeft": // <- Step backward
+                case "arrowleft": // <- Step backward
                     if (paused) stepBackward();
                     break;
 
-                case "ArrowRight": // -> Step forward
+                case "arrowright": // -> Step forward
                     if (paused) stepForward();
                     break;
+
+                case "arrowup":
+                    setSpeed(s => Math.min(s + 10, 200));
+                    break;
+
+                case "arrowdown":
+                    setSpeed(s => Math.max(s - 10, 10));
+                    break;
                 
-                case "r":
-                case "R": // R -> Generate array
+                case "r": // R -> Generate array
                     if (!running) generateArray();
                     break;
 
-                case "s":
-                case "S": // S -> Start sort
+                case "s": // S -> Start sort
                     if (!running && array.length > 0) startSort();
                     break;
 
@@ -391,7 +397,7 @@ function BubbleSortVisualizer() {
             {/* Algorithm description */}
             <AlgorithmInfo algorithm={algorithm} />
 
-            <div className="metrics-panel">
+            <div className="metrics-panel" role="status" aria-live="polite">
                 <div className="legend">
                     <div className="legend-item">
                         <span className="legend-color default"></span>
@@ -421,7 +427,7 @@ function BubbleSortVisualizer() {
 
                 {showHelp && !running && !loading && (
                     <div className="hint">
-                        Space: Pause/Resume · ← →: Step · S: Start · R: Generate
+                        ⌨ Space = Pause/Resume · ← → = Step · ↑ ↓ = Speed · S = Start · R = Generate
                     </div>
                 )}
 
@@ -431,15 +437,15 @@ function BubbleSortVisualizer() {
                     </div>
                 )}
 
-                <div className="metric-box">
+                <div className="metric-box" aria-label="Number of swaps">
                     <label>Swaps</label>
                     <span>{swaps}</span>
                 </div>
-                <div className="metric-box">
+                <div className="metric-box" aria-label="Number of comparisons">
                     <label>Comparisons</label>
                     <span>{comparisons}</span>
                 </div>
-                <div className="metric-box">
+                <div className="metric-box" aria-label="Time complexity">
                     <label>Time Complexity</label>
                     <span>{timeComplexity || "-"}</span>
                 </div>
@@ -502,6 +508,7 @@ function BubbleSortVisualizer() {
                 className="button"
                 onClick={generateArray}
                 disabled={running || paused || loading}
+                aria-label="Generate new random array"
             >
                 Generate Array
             </button>
@@ -509,6 +516,7 @@ function BubbleSortVisualizer() {
                 className="button"
                 onClick={startSort}
                 disabled={running || loading || array.length === 0}
+                aria-label="Start sorting algorithm"
             >
                 Start {algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort
             </button>
@@ -516,6 +524,7 @@ function BubbleSortVisualizer() {
                 className="button"
                 onClick={togglePause}
                 disabled={!running}
+                aria-label="Pause or resume sorting"
             >
                 {paused ? "Resume" : "Pause"}
             </button>
@@ -523,6 +532,7 @@ function BubbleSortVisualizer() {
                 className="button"
                 onClick={stopSort}
                 disabled={!running && !loading}
+                aria-label="Stop sorting"
             >
                 Stop
             </button>
@@ -530,6 +540,7 @@ function BubbleSortVisualizer() {
                 className="button"
                 onClick={stepBackward}
                 disabled={!paused || currentFrameIndex === 0 || frames.length === 0}
+                aria-label="Step backward"
             >
                 Step Backward
             </button>
@@ -537,6 +548,7 @@ function BubbleSortVisualizer() {
                 className="button"
                 onClick={stepForward}
                 disabled={!paused || currentFrameIndex >= frames.length - 1 || frames.length === 0}
+                aria-label="Step forward"
             >
                 Step Forward
             </button>
