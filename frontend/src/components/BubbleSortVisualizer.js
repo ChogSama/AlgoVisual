@@ -39,6 +39,7 @@ function BubbleSortVisualizer() {
     const runningRef = useRef(false);
     const abortControllerRef = useRef(null);
     const containerRef = useRef(null);
+    const originalArrayRef = useRef([]);
 
     useEffect(() => {
         stopSort();
@@ -106,15 +107,55 @@ function BubbleSortVisualizer() {
     // Generate random array
     const generateArray = () => {
         if (arraySize > 200) return;
+
         const newArr = Array.from({ length: arraySize }, () =>
             Math.floor(Math.random() * 100) + 5
         );
+
+        originalArrayRef.current = [...newArr];
         setArray(newArr);
+
         setSwaps(0);
         setComparisons(0);
         setTimeComplexity("");
         setHighlight({ i: null, j: null, swapped: false });
         setFinished(false);
+    };
+
+    const resetArray = () => {
+        if (running || loading) return;
+        
+        const base = originalArrayRef.current;
+        if (!base || base.length === 0) return;
+
+        setArray([...base]);
+        setSwaps(0);
+        setComparisons(0);
+        setTimeComplexity("");
+        setHighlight({ i: null, j: null, swapped: false });
+        setFinished(false);
+        setFrames([]);
+        setCurrentFrameIndex(0);
+    };
+
+    const shuffleArray = () => {
+        if (running || loading) return;
+
+        const shuffled = [...array]
+            .map(v => ({ v, r: Math.random() }))
+            .sort((a, b) => a.r - b.r)
+            .map(o => o.v);
+
+        originalArrayRef.current = [...shuffled];
+        setArray(shuffled);
+
+        setSwaps(0);
+        setComparisons(0);
+        setTimeComplexity("");
+        setHighlight({ i: null, j: null, swapped: false });
+        setFinished(false);
+        setFrames([]);
+        setCurrentFrameIndex(0);
     };
 
     const flashSorted = async () => {
@@ -397,6 +438,10 @@ function BubbleSortVisualizer() {
             {/* Algorithm description */}
             <AlgorithmInfo algorithm={algorithm} />
 
+            <div className="status-indicator">
+                {running ? "🔄 Sorting..." : finished ? "✅ Ready" : "🟢 Idle"}
+            </div>
+
             <div className="metrics-panel" role="status" aria-live="polite">
                 <div className="legend">
                     <div className="legend-item">
@@ -519,6 +564,20 @@ function BubbleSortVisualizer() {
                 aria-label="Start sorting algorithm"
             >
                 Start {algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort
+            </button>
+            <button
+                className="button"
+                onClick={shuffleArray}
+                disabled={running || paused || loading || array.length === 0}
+            >
+                Shuffle
+            </button>
+            <button
+                className="button"
+                onClick={resetArray}
+                disabled={running || paused || loading}
+            >
+                Reset
             </button>
             <button
                 className="button"
