@@ -477,7 +477,7 @@ function BubbleSortVisualizer() {
                 )}
 
                 {paused && (
-                    <div className="paused-indicator">
+                    <div className="paused-indicator" aria-live="polite">
                         ⏸ Paused
                     </div>
                 )}
@@ -497,7 +497,7 @@ function BubbleSortVisualizer() {
             </div>
 
             {finished && (
-                <div className="finished-indicator">
+                <div className="finished-indicator" aria-live="polite">
                     ✅ Sorting Complete
                 </div>
             )}
@@ -512,11 +512,16 @@ function BubbleSortVisualizer() {
                 )}
             </div>
 
-            <button className="button" onClick={() => setShowHelp(v => !v)}>
+            <button
+                className="button"
+                onClick={() => setShowHelp(v => !v)}
+                title="Show keyboard shortcuts"
+                aria-label="Toggle keyboard shortcuts help"
+            >
                 ❓ Shortcuts
             </button>
 
-            <div className="controls">
+            <div className="controls" role="group" aria-label="Sorting controls">
                 <label>Array Size: {arraySize}</label>
                 <input
                     type="range"
@@ -613,13 +618,13 @@ function BubbleSortVisualizer() {
             </button>
 
             {loading && (
-                <div className="loading-indicator">
+                <div className="loading-indicator" aria-live="polite">
                     ⏳ Loading frames from backend...
                 </div>
             )}
 
             {error && (
-                <div className="error-indicator">
+                <div className="error-indicator" role="alert">
                     ❌ {error}
                     <div style={{ marginTop: "8px" }}>
                         <button
@@ -634,7 +639,7 @@ function BubbleSortVisualizer() {
             )}
 
             {frames.length > 0 && (
-                <div className="timeline">
+                <div className="timeline" role="region" aria-label="Timeline scrubber">
                     <div className="timeline-label">
                         Frame {currentFrameIndex + 1} / {frames.length}
                     </div>

@@ -387,3 +387,15 @@ input:focus-visible {
         border-color 0.2s ease,
         color 0.2s ease;
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .array-bar,
+    .button,
+    .metric-box,
+    .controls,
+    .timeline-progress,
+    .loading-indicator {
+        transition: none !important;
+        animation: none !important;
+    }
+}
