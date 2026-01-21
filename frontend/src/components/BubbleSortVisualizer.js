@@ -94,8 +94,33 @@ function BubbleSortVisualizer() {
     }, [running, paused, currentFrameIndex, frames, array]);
 
     useEffect(() => {
-        generateArray();
+        const params = new URLSearchParams(window.location.search);
+
+        const sizeParam = params.get("size");
+        const speedParam = params.get("speed");
+        const algoParam = params.get("algo");
+
+        if (sizeParam !== null) {
+            const size = Number(sizeParam);
+            if (!Number.isNaN(size) && size > 0) setArraySize(size);
+        }
+
+        if (speedParam !== null) {
+            const spd = Number(speedParam);
+            if (!Number.isNaN(spd) && spd > 0) setSpeed(spd);
+        }
+
+        if (algoParam) setAlgorithm(algoParam);
+
+        // Clear URL after applying
+        if (window.location.search) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }, []);
+
+    useEffect(() => {
+        generateArray();
+    }, [arraySize]);
 
     useEffect(() => {
         localStorage.setItem(
@@ -103,6 +128,26 @@ function BubbleSortVisualizer() {
             JSON.stringify({ arraySize, speed, algorithm })
         );
     }, [arraySize, speed, algorithm]);
+
+    const buildShareUrl = () => {
+        const params = new URLSearchParams({
+            size: arraySize,
+            speed,
+            algo: algorithm
+        });
+
+        return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    };
+
+    const copyShareLink = async () => {
+        try {
+            const url = buildShareUrl();
+            await navigator.clipboard.writeText(url);
+            alert("🔗 Share link copied!");
+        } catch {
+            alert("❌ Failed to copy link.");
+        }
+    };
 
     // Generate random array
     const generateArray = () => {
@@ -583,6 +628,14 @@ function BubbleSortVisualizer() {
                 disabled={running || paused || loading}
             >
                 Reset
+            </button>
+            <button
+                className="button"
+                onClick={copyShareLink}
+                disabled={running || loading}
+                aria-label="Share current visualizer state"
+            >
+                🔗 Share State
             </button>
             <button
                 className="button"
