@@ -100,27 +100,51 @@ function BubbleSortVisualizer() {
         const speedParam = params.get("speed");
         const algoParam = params.get("algo");
 
+        let restoredSize = null;
+        let restoredSpeed = null;
+        let restoredAlgo = null;
+
         if (sizeParam !== null) {
             const size = Number(sizeParam);
-            if (!Number.isNaN(size) && size > 0) setArraySize(size);
+            if (!Number.isNaN(size) && size >= 5 && size <= 100){
+                restoredSize = size;
+                setArraySize(size);
+            }
         }
 
         if (speedParam !== null) {
             const spd = Number(speedParam);
-            if (!Number.isNaN(spd) && spd > 0) setSpeed(spd);
+            if (!Number.isNaN(spd) && spd >= 10 && spd <= 200) {
+                restoredSpeed = spd;
+                setSpeed(spd);
+            }
         }
 
-        if (algoParam) setAlgorithm(algoParam);
+        if (
+            typeof algoParam === "string" &&
+            ["bubble", "merge", "quick"].includes(algoParam)
+        ) {
+            restoredAlgo = algoParam;
+            setAlgorithm(algoParam);
+        }
+
+        // Delay generation so state updates apply first
+        setTimeout(() => {
+            generateArray();
+        }, 0);
+
+        // Dev sanity log
+        console.log("Restored from URL:", {
+            size: restoredSize,
+            speed: restoredSpeed,
+            algo: restoredAlgo
+        });
 
         // Clear URL after applying
         if (window.location.search) {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     }, []);
-
-    useEffect(() => {
-        generateArray();
-    }, [arraySize]);
 
     useEffect(() => {
         localStorage.setItem(
