@@ -28,9 +28,13 @@ function BubbleSortVisualizer() {
     const [comparisons, setComparisons] = useState(0);
     const [timeComplexity, setTimeComplexity] = useState("");
     const [highlight, setHighlight] = useState({ i: null, j: null, swapped: false });
-    const [paused, setPaused] = useState(false);
+    const [paused, setPaused] = useState(
+        initialSettings?.paused ?? false
+    );
     const [frames, setFrames] = useState([]);
-    const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+    const [currentFrameIndex, setCurrentFrameIndex] = useState(
+        initialSettings?.currentFrameIndex ?? 0
+    );
     const [finished, setFinished] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -40,13 +44,37 @@ function BubbleSortVisualizer() {
     const abortControllerRef = useRef(null);
     const containerRef = useRef(null);
     const originalArrayRef = useRef([]);
+    const didRestoreRef = useRef(false);
 
     useEffect(() => {
-        stopSort();
+        // Don't intefere while restoring persisted state
+        if (!didRestoreRef.current) return;
+
+        // If we restored a paused state but nothing is running, unlock UI
+        if (paused && !runningRef.current && !running) {
+            setPaused(false);
+            pausedRef.current = false;
+        }
+    }, [paused, running]);
+
+    useEffect(() => {
+        if (!didRestoreRef.current) return;
+
+        const restored = getInitialSettings();
+
+        if (restored?.algorithm === algorithm) {
+            return;
+        }
+
+        setRunning(false);
+        runningRef.current = false;
+
         setArray([]);
         setSwaps(0);
         setComparisons(0);
         setTimeComplexity("");
+        setFinished(false);
+        setError("");
     }, [algorithm]);
 
     useEffect(() => {
@@ -94,6 +122,90 @@ function BubbleSortVisualizer() {
     }, [running, paused, currentFrameIndex, frames, array]);
 
     useEffect(() => {
+        const settings = getInitialSettings();
+        if (!settings) return;
+
+        if (settings.running === true && settings.frames?.length > 0) {
+            setRunning(true);
+            runningRef.current = true;
+        }
+
+        if (Array.isArray(settings.array)) {
+            setArray(settings.array);
+            originalArrayRef.current = [...settings.array];
+        }
+
+        if (Array.isArray(settings.frames)) {
+            setFrames(settings.frames);
+        }
+
+        if (typeof settings.swaps === "number") {
+            setSwaps(settings.swaps);
+        }
+
+        if (typeof settings.comparisons === "number") {
+            setComparisons(settings.comparisons);
+        }
+
+        if (settings.highlight) {
+            setHighlight(settings.highlight);
+        }
+
+        if (
+            settings.paused === true &&
+            Array.isArray(settings.frames) &&
+            settings.frames.length > 0 &&
+            Array.isArray(settings.array) &&
+            settings.array.length > 0
+        ) {
+            setPaused(true);
+            pausedRef.current = true;
+        }
+
+        if (
+            typeof settings.currentFrameIndex === "number" &&
+            settings.frames?.length > 0 &&
+            settings.currentFrameIndex < settings.frames.length
+        ) {
+            const idx = settings.currentFrameIndex;
+            setCurrentFrameIndex(idx);
+            applyFrame(settings.frames[idx]);
+        }
+
+        didRestoreRef.current = true;
+    }, []);
+
+    useEffect(() => {
+        // Skip recovery logic while restoring
+        if (!didRestoreRef.current) return;
+
+        // Recovery guard: if paused but array is empty or frames are missing
+        const invalidRunningState =
+            running &&
+            paused &&
+            (
+                !Array.isArray(array) || array.length === 0 ||
+                !Array.isArray(frames) || frames.length === 0
+            );
+        if (invalidRunningState) {
+            console.warn("Recovery: invalid paused-running state, resetting...");
+
+            setRunning(false);
+            runningRef.current = false;
+
+            setPaused(false);
+            pausedRef.current = false;
+
+            setFrames([]);
+            setCurrentFrameIndex(0);
+            setHighlight({ i: null, j: null, swapped: false });
+            setFinished(false);
+            setLoading(false);
+            setError("");
+        }
+    }, [running, paused, array, frames]);
+
+    useEffect(() => {
         const params = new URLSearchParams(window.location.search);
 
         const sizeParam = params.get("size");
@@ -129,9 +241,15 @@ function BubbleSortVisualizer() {
         }
 
         // Delay generation so state updates apply first
-        setTimeout(() => {
-            generateArray();
-        }, 0);
+        const restored = getInitialSettings();
+
+        if (!restored?.array || restored.array.length === 0) {
+            setTimeout(() => {
+                if (!didRestoreRef.current) {
+                    generateArray();
+                }
+            }, 0);
+        }
 
         // Dev sanity log
         console.log("Restored from URL:", {
@@ -147,11 +265,69 @@ function BubbleSortVisualizer() {
     }, []);
 
     useEffect(() => {
+        if (running && !paused) {
+            return;
+        }
+        if (!array || array.length === 0) {
+            return;
+        }
+
         localStorage.setItem(
             "algo-settings",
-            JSON.stringify({ arraySize, speed, algorithm })
+            JSON.stringify({
+                arraySize,
+                speed,
+                algorithm,
+                currentFrameIndex,
+                paused,
+                running: paused ? true : running,
+                frames,
+                array,
+                swaps,
+                comparisons,
+                highlight
+            })
         );
-    }, [arraySize, speed, algorithm]);
+    }, [arraySize,
+        speed,
+        algorithm,
+        currentFrameIndex,
+        paused,
+        running,
+        frames,
+        array,
+        swaps,
+        comparisons,
+        highlight
+    ]);
+
+    useEffect(() => {
+        pausedRef.current = paused;
+    }, [paused]);
+
+    useEffect(() => {
+        const settings = getInitialSettings();
+        if (
+            settings?.currentFrameIndex != null &&
+            frames.length > 0 &&
+            settings.currentFrameIndex < frames.length
+        ) {
+            const idx = settings.currentFrameIndex;
+            setCurrentFrameIndex(idx);
+            applyFrame(frames[idx]);
+        }
+    }, [frames]);
+
+    useEffect(() => {
+        if (!didRestoreRef.current) return;
+        if (!running) return;
+        if (paused) return;
+        if (!frames.length) return;
+        if (currentFrameIndex >= frames.length - 1) return;
+
+        // resume animation loop after refresh + resume click
+        resumePlayback();
+    }, [running, paused]);
 
     const buildShareUrl = () => {
         const params = new URLSearchParams({
@@ -189,6 +365,23 @@ function BubbleSortVisualizer() {
         setTimeComplexity("");
         setHighlight({ i: null, j: null, swapped: false });
         setFinished(false);
+
+        if (!getInitialSettings()?.frames) {
+            setFrames([]);
+        }
+
+        const restored = getInitialSettings();
+        if (restored?.currentFrameIndex != null) {
+            setCurrentFrameIndex(restored.currentFrameIndex);
+        } else {
+            setCurrentFrameIndex(0);
+        }
+
+        // only reset pause if user manually generates
+        if (!getInitialSettings()?.paused) {
+            setPaused(false);
+            pausedRef.current = false;
+        }
     };
 
     const resetArray = () => {
@@ -258,6 +451,40 @@ function BubbleSortVisualizer() {
         });
     };
 
+    const resumePlayback = async () => {
+        if (!frames.length) return;
+        if (!runningRef.current) return;
+
+        for (let i = currentFrameIndex; i < frames.length; i++) {
+            if (!runningRef.current) return;
+
+            setCurrentFrameIndex(i);
+            const frame = frames[i];
+            if (!frame || !frame.array) continue;
+
+            setArray(frame.array);
+            setSwaps(frame.swaps);
+            setComparisons(frame.comparisons);
+            setHighlight(frame.highlight || { i: null, j: null, swapped: false });
+
+            await waitForResume();
+
+            const extraDelay = frame.highlight?.swapped ? speed * 2 : 0;
+            await new Promise(resolve =>
+                setTimeout(resolve, speed + extraDelay)
+            );
+        }
+
+        await flashSorted();
+
+        setRunning(false);
+        runningRef.current = false;
+        setPaused(false);
+        pausedRef.current = false;
+        setFinished(true);
+        setLoading(false);
+    };
+
     const stopSort = () => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -270,6 +497,8 @@ function BubbleSortVisualizer() {
 
         setPaused(false);
         pausedRef.current = false;
+
+        didRestoreRef.current = false;
 
         setFinished(false);
         setError("");
