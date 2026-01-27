@@ -88,6 +88,14 @@ function BubbleSortVisualizer() {
                     if (running) togglePause();
                     break;
 
+                case "n": // N -> Step forward
+                    if (paused) stepForward();
+                    break;
+
+                case "b": // B -> Step backward
+                    if (paused) stepBackward();
+                    break;
+
                 case "arrowleft": // <- Step backward
                     if (paused) stepBackward();
                     break;
@@ -770,7 +778,7 @@ function BubbleSortVisualizer() {
 
                 {showHelp && !running && !loading && (
                     <div className="hint">
-                        ⌨ Space = Pause/Resume · ← → = Step · ↑ ↓ = Speed · S = Start · R = Generate
+                        ⌨ Space = Pause/Resume · N/B = Step · ← → = Step · ↑ ↓ = Speed · S = Start · R = Generate
                     </div>
                 )}
 
