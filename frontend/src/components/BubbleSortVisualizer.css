@@ -159,7 +159,7 @@
 .timeline-track {
     position: relative;
     height: 6px;
-    background: #ddd;
+    background: var(--border);
     border-radius: 999px;
     overflow: hidden;
 }
@@ -170,7 +170,7 @@
     left: 0;
     top: 0;
     height: 100%;
-    background: #4ea3ff;
+    background: var(--accent);
     pointer-events: none;
 }
 
@@ -356,11 +356,12 @@
 }
 
 .loading-box {
-    background: #1e1e1e;
+    background: var(--panel);
     padding: 20px 28px;
     border-radius: 10px;
     font-size: 18px;
-    color: #fff;
+    color: var(--text);
+    border: 1px solid var(--border);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
@@ -398,4 +399,17 @@ input:focus-visible {
         transition: none !important;
         animation: none !important;
     }
+}
+
+.metric-box label,
+.timeline-label,
+.status-indicator,
+.hint {
+    color: var(--text-muted);
+}
+
+.metric-box span,
+.legend-item,
+.controls label {
+    color: var(--text);
 }
