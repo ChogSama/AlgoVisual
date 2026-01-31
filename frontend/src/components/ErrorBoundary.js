@@ -1,5 +1,5 @@
 import React from "react";
-import "./BubbleSortVisualizer.css";
+import "./SortVisualizer.css";
 
 class ErrorBoundary extends React.Component {
     constructor(props) {

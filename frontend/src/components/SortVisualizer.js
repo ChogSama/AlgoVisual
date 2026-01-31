@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import "./BubbleSortVisualizer.css";
+import "./SortVisualizer.css";
 import AlgorithmInfo from "./AlgorithmInfo.js";
+
+const ALGORITHM_API_MAP = {
+    bubble: "bubble-sort",
+    merge: "merge-sort",
+    quick: "quick-sort"
+};
 
 const getInitialSettings = () => {
     try {
@@ -11,7 +17,7 @@ const getInitialSettings = () => {
     }
 };
 
-function BubbleSortVisualizer() {
+function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const [array, setArray] = useState([]);
     const [running, setRunning] = useState(false);
     const initialSettings = getInitialSettings();
@@ -22,7 +28,7 @@ function BubbleSortVisualizer() {
         initialSettings?.speed ?? 50
     );
     const [algorithm, setAlgorithm] = useState(
-        initialSettings?.algorithm ?? "bubble"
+        initialSettings?.algorithm ?? initialAlgorithm
     );
     const [swaps, setSwaps] = useState(0);
     const [comparisons, setComparisons] = useState(0);
@@ -576,18 +582,13 @@ function BubbleSortVisualizer() {
         setComparisons(0);
         setTimeComplexity("");
         setCurrentFrameIndex(0);
-        const map = {
-            bubble: "bubble-sort",
-            merge: "merge-sort",
-            quick: "quick-sort"
-        };
         abortControllerRef.current = new AbortController();
 
         let result;
 
         try {
             const response = await fetch(
-                `${process.env.REACT_APP_API_URL}/api/${map[algorithm]}`,
+                `${process.env.REACT_APP_API_URL}/api/${ALGORITHM_API_MAP[algorithm]}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -994,4 +995,4 @@ function BubbleSortVisualizer() {
     );
 }
 
-export default BubbleSortVisualizer;
+export default SortVisualizer;

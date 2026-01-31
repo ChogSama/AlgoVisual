@@ -1,6 +1,6 @@
 import './App.css';
 import React, {useState, useEffect} from "react";
-import BubbleSortVisualizer from './components/BubbleSortVisualizer.js';
+import SortVisualizer from './components/SortVisualizer.js';
 import ErrorBoundary from './components/ErrorBoundary.js';
 
 function getInitialTheme() {
@@ -38,7 +38,7 @@ function App() {
       </div>
 
       <ErrorBoundary>
-        <BubbleSortVisualizer />
+        <SortVisualizer />
       </ErrorBoundary>
     </div>
   );
