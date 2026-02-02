@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import "./SortVisualizer.css";
 import AlgorithmInfo from "./AlgorithmInfo.js";
 
+const MAX_FRAMES = 5000;
+const MAX_FPS_DELAY = 10; // minimum delay (ms)
+const MAX_TIMELINE_FRAMES = 3000;
+
 const ALGORITHM_API_MAP = {
     bubble: "bubble-sort",
     merge: "merge-sort",
@@ -343,6 +347,24 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         resumePlayback();
     }, [running, paused]);
 
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+
+            runningRef.current = false;
+            pausedRef.current = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (running && frames.length === 0 && !loading) {
+            console.warn("Frames lost during run - stopping safely");
+            stopSort();
+        }
+    }, [frames, running, loading]);
+
     const buildShareUrl = () => {
         const params = new URLSearchParams({
             size: arraySize,
@@ -484,8 +506,9 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             await waitForResume();
 
             const extraDelay = frame.highlight?.swapped ? speed * 2 : 0;
+            const delay = Math.max(speed + extraDelay, MAX_FPS_DELAY);
             await new Promise(resolve =>
-                setTimeout(resolve, speed + extraDelay)
+                setTimeout(resolve, delay)
             );
         }
 
@@ -626,9 +649,17 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         }
 
         const rawFrames = result.frames;
+        if (rawFrames.length > MAX_FRAMES) {
+            console.warn("Too many frames, truncating for safety");
+
+            alert(
+                `⚠️ Large animation detected (${rawFrames.length} frames).\n` +
+                `Playback will be optimized to prevent freezing.`
+            );
+        }
         const optimized = [];
 
-        for (let i = 0; i < rawFrames.length; i++) {
+        for (let i = 0; i < rawFrames.length && optimized.length < MAX_FRAMES; i++) {
             if (i === 0 || !isSameFrame(rawFrames[i], rawFrames[i - 1])) {
                 optimized.push(rawFrames[i]);
             }
@@ -653,8 +684,9 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             await waitForResume();
 
             const extraDelay = frame.highlight?.swapped ? speed * 2 : 0;
+            const delay = Math.max(speed + extraDelay, MAX_FPS_DELAY);
             await new Promise(resolve => 
-                setTimeout(resolve, speed + extraDelay)
+                setTimeout(resolve, delay)
             );
         }
 
@@ -953,6 +985,12 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 </div>
             )}
 
+            {frames.length > MAX_TIMELINE_FRAMES && (
+                <div className="hint">
+                    ⚠️ Timeline disabled for large animations
+                </div>
+            )}
+
             {frames.length > 0 && (
                 <div className="timeline" role="region" aria-label="Timeline scrubber">
                     <div className="timeline-label">
@@ -966,7 +1004,11 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                             min="0"
                             max={frames.length - 1}
                             value={currentFrameIndex}
-                            disabled={!paused || loading}
+                            disabled={
+                                !paused ||
+                                loading ||
+                                frames.length > MAX_TIMELINE_FRAMES
+                            }
                             onChange={(e) => {
                                 const idx = Number(e.target.value);
                                 setCurrentFrameIndex(idx);
