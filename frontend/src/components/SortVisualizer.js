@@ -70,20 +70,14 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     useEffect(() => {
         if (!didRestoreRef.current) return;
 
-        const restored = getInitialSettings();
-
-        if (restored?.algorithm === algorithm) {
-            return;
-        }
-
-        setRunning(false);
-        runningRef.current = false;
+        hardResetExecution();
 
         setArray([]);
+        originalArrayRef.current = [];
+
         setSwaps(0);
         setComparisons(0);
         setTimeComplexity("");
-        setFinished(false);
         setError("");
     }, [algorithm]);
 
@@ -389,6 +383,8 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const generateArray = () => {
         if (arraySize > 200) return;
 
+        hardResetExecution();
+
         const newArr = Array.from({ length: arraySize }, () =>
             Math.floor(Math.random() * 100) + 5
         );
@@ -399,25 +395,6 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         setSwaps(0);
         setComparisons(0);
         setTimeComplexity("");
-        setHighlight({ i: null, j: null, swapped: false });
-        setFinished(false);
-
-        if (!getInitialSettings()?.frames) {
-            setFrames([]);
-        }
-
-        const restored = getInitialSettings();
-        if (restored?.currentFrameIndex != null) {
-            setCurrentFrameIndex(restored.currentFrameIndex);
-        } else {
-            setCurrentFrameIndex(0);
-        }
-
-        // only reset pause if user manually generates
-        if (!getInitialSettings()?.paused) {
-            setPaused(false);
-            pausedRef.current = false;
-        }
     };
 
     const resetArray = () => {
@@ -583,6 +560,10 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
 
     // All Sort Animation
     const startSort = async () => {
+        if (runningRef.current || loading) return;
+
+        hardResetExecution(); // 🔑 KILL OLD RUNS
+
         if (arraySize > 80) {
             const ok = window.confirm(
                 "Large array may be slow. Continue?"
@@ -704,6 +685,41 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         pausedRef.current = false;
         setFinished(true);
         setLoading(false);
+    };
+
+    const hardResetExecution = () => {
+        // Kill async loops
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+
+        runningRef.current = false;
+        pausedRef.current = false;
+
+        setRunning(false);
+        setPaused(false);
+        setLoading(false);
+        setFinished(false);
+
+        setFrames([]);
+        setCurrentFrameIndex(0);
+        setHighlight({ i: null, j: null, swapped: false });
+
+        // Clear persisted execution state
+        const settings = getInitialSettings();
+        if (settings) {
+            localStorage.setItem(
+                "algo-settings",
+                JSON.stringify({
+                    ...settings,
+                    frames: [],
+                    currentFrameIndex: 0,
+                    paused: false,
+                    running: false
+                })
+            );
+        }
     };
 
     function getBarColor(index, h) {
