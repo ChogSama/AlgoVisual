@@ -1,16 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./SortVisualizer.css";
 import AlgorithmInfo from "./AlgorithmInfo.js";
+import useSortEngine from "../hooks/useSortEngine.js";
 
-const MAX_FRAMES = 5000;
-const MAX_FPS_DELAY = 10; // minimum delay (ms)
 const MAX_TIMELINE_FRAMES = 3000;
-
-const ALGORITHM_API_MAP = {
-    bubble: "bubble-sort",
-    merge: "merge-sort",
-    quick: "quick-sort"
-};
 
 const getInitialSettings = () => {
     try {
@@ -23,7 +16,6 @@ const getInitialSettings = () => {
 
 function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const [array, setArray] = useState([]);
-    const [running, setRunning] = useState(false);
     const initialSettings = getInitialSettings();
     const [arraySize, setArraySize] = useState(
         initialSettings?.arraySize ?? 10
@@ -34,51 +26,34 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const [algorithm, setAlgorithm] = useState(
         initialSettings?.algorithm ?? initialAlgorithm
     );
-    const [swaps, setSwaps] = useState(0);
-    const [comparisons, setComparisons] = useState(0);
     const [timeComplexity, setTimeComplexity] = useState("");
-    const [highlight, setHighlight] = useState({ i: null, j: null, swapped: false });
-    const [paused, setPaused] = useState(
-        initialSettings?.paused ?? false
-    );
-    const [frames, setFrames] = useState([]);
-    const [currentFrameIndex, setCurrentFrameIndex] = useState(
-        initialSettings?.currentFrameIndex ?? 0
-    );
-    const [finished, setFinished] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const [showHelp, setShowHelp] = useState(false);
-    const pausedRef = useRef(paused);
-    const runningRef = useRef(false);
-    const abortControllerRef = useRef(null);
     const containerRef = useRef(null);
     const originalArrayRef = useRef([]);
     const didRestoreRef = useRef(false);
+    const didInitAlgorithmRef = useRef(false);
+    const engine = useSortEngine({
+        algorithm,
+        array,
+        speed,
+        setArray,
+        setTimeComplexity
+    });
 
     useEffect(() => {
-        // Don't intefere while restoring persisted state
         if (!didRestoreRef.current) return;
 
-        // If we restored a paused state but nothing is running, unlock UI
-        if (paused && !runningRef.current && !running) {
-            setPaused(false);
-            pausedRef.current = false;
+        // Skip first mount
+        if (!didInitAlgorithmRef.current) {
+            didInitAlgorithmRef.current = true;
+            return;
         }
-    }, [paused, running]);
-
-    useEffect(() => {
-        if (!didRestoreRef.current) return;
 
         hardResetExecution();
 
         setArray([]);
         originalArrayRef.current = [];
-
-        setSwaps(0);
-        setComparisons(0);
         setTimeComplexity("");
-        setError("");
     }, [algorithm]);
 
     useEffect(() => {
@@ -86,26 +61,41 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             // Ignore typing inside inputs/sliders/selects
             if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) return;
 
+            const controlledKeys = [
+                " ",
+                "n",
+                "b",
+                "arrowleft",
+                "arrowright",
+                "arrowup",
+                "arrowdown",
+                "r",
+                "s"
+            ];
+
+            if (controlledKeys.includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+
             switch (e.key.toLowerCase()) {
                 case " ": // Space -> Pause / Resume
-                    e.preventDefault();
-                    if (running) togglePause();
+                    if (engine.running) engine.togglePause();
                     break;
 
                 case "n": // N -> Step forward
-                    if (paused) stepForward();
+                    if (engine.paused) engine.stepForward();
                     break;
 
                 case "b": // B -> Step backward
-                    if (paused) stepBackward();
+                    if (engine.paused) engine.stepBackward();
                     break;
 
                 case "arrowleft": // <- Step backward
-                    if (paused) stepBackward();
+                    if (engine.paused) engine.stepBackward();
                     break;
 
                 case "arrowright": // -> Step forward
-                    if (paused) stepForward();
+                    if (engine.paused) engine.stepForward();
                     break;
 
                 case "arrowup":
@@ -117,11 +107,11 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                     break;
                 
                 case "r": // R -> Generate array
-                    if (!running) generateArray();
+                    if (!engine.running) generateArray();
                     break;
 
                 case "s": // S -> Start sort
-                    if (!running && array.length > 0) startSort();
+                    if (!engine.running && array.length > 0) engine.startSort();
                     break;
 
                 default:
@@ -131,57 +121,22 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [running, paused, currentFrameIndex, frames, array]);
+    }, [engine.running, engine.paused, engine.currentFrameIndex, engine.frames, array]);
 
     useEffect(() => {
         const settings = getInitialSettings();
         if (!settings) return;
-
-        if (settings.running === true && settings.frames?.length > 0) {
-            setRunning(true);
-            runningRef.current = true;
-        }
 
         if (Array.isArray(settings.array)) {
             setArray(settings.array);
             originalArrayRef.current = [...settings.array];
         }
 
-        if (Array.isArray(settings.frames)) {
-            setFrames(settings.frames);
-        }
-
-        if (typeof settings.swaps === "number") {
-            setSwaps(settings.swaps);
-        }
-
-        if (typeof settings.comparisons === "number") {
-            setComparisons(settings.comparisons);
-        }
-
-        if (settings.highlight) {
-            setHighlight(settings.highlight);
-        }
-
-        if (
-            settings.paused === true &&
-            Array.isArray(settings.frames) &&
-            settings.frames.length > 0 &&
-            Array.isArray(settings.array) &&
-            settings.array.length > 0
-        ) {
-            setPaused(true);
-            pausedRef.current = true;
-        }
-
-        if (
-            typeof settings.currentFrameIndex === "number" &&
-            settings.frames?.length > 0 &&
-            settings.currentFrameIndex < settings.frames.length
-        ) {
-            const idx = settings.currentFrameIndex;
-            setCurrentFrameIndex(idx);
-            applyFrame(settings.frames[idx]);
+        if (Array.isArray(settings.frames) && settings.frames.length > 0) {
+            engine.setFrames(settings.frames); // 🔥 hydrate engine
+            const idx = settings.currentFrameIndex || 0;
+            engine.setCurrentFrameIndex(idx);
+            engine.applyFrame(settings.frames[idx]);
         }
 
         didRestoreRef.current = true;
@@ -193,29 +148,19 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
 
         // Recovery guard: if paused but array is empty or frames are missing
         const invalidRunningState =
-            running &&
-            paused &&
+            engine.running &&
+            engine.paused &&
             (
                 !Array.isArray(array) || array.length === 0 ||
-                !Array.isArray(frames) || frames.length === 0
+                !Array.isArray(engine.frames) || engine.frames.length === 0
             );
         if (invalidRunningState) {
             console.warn("Recovery: invalid paused-running state, resetting...");
 
-            setRunning(false);
-            runningRef.current = false;
-
-            setPaused(false);
-            pausedRef.current = false;
-
-            setFrames([]);
-            setCurrentFrameIndex(0);
-            setHighlight({ i: null, j: null, swapped: false });
-            setFinished(false);
-            setLoading(false);
-            setError("");
+            engine.setCurrentFrameIndex(0);
+            engine.stopSort();
         }
-    }, [running, paused, array, frames]);
+    }, [engine.running, engine.paused, array, engine.frames]);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -277,7 +222,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     }, []);
 
     useEffect(() => {
-        if (running && !paused) {
+        if (engine.running && !engine.paused && engine.frames.length === 0) {
             return;
         }
         if (!array || array.length === 0) {
@@ -290,74 +235,54 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 arraySize,
                 speed,
                 algorithm,
-                currentFrameIndex,
-                paused,
-                running: paused ? true : running,
-                frames,
+                currentFrameIndex: engine.currentFrameIndex,
+                paused: engine.paused,
+                running: engine.paused ? true : engine.running,
+                frames: engine.frames,
                 array,
-                swaps,
-                comparisons,
-                highlight
+                swaps: engine.swaps,
+                comparisons: engine.comparisons,
+                highlight: engine.highlight
             })
         );
     }, [arraySize,
         speed,
         algorithm,
-        currentFrameIndex,
-        paused,
-        running,
-        frames,
+        engine.currentFrameIndex,
+        engine.paused,
+        engine.running,
+        engine.frames,
         array,
-        swaps,
-        comparisons,
-        highlight
+        engine.swaps,
+        engine.comparisons,
+        engine.highlight
     ]);
-
-    useEffect(() => {
-        pausedRef.current = paused;
-    }, [paused]);
 
     useEffect(() => {
         const settings = getInitialSettings();
         if (
             settings?.currentFrameIndex != null &&
-            frames.length > 0 &&
-            settings.currentFrameIndex < frames.length
+            engine.frames.length > 0 &&
+            settings.currentFrameIndex < engine.frames.length
         ) {
             const idx = settings.currentFrameIndex;
-            setCurrentFrameIndex(idx);
-            applyFrame(frames[idx]);
+            engine.setCurrentFrameIndex(idx);
+            engine.applyFrame(engine.frames[idx]);
         }
-    }, [frames]);
-
-    useEffect(() => {
-        if (!didRestoreRef.current) return;
-        if (!running) return;
-        if (paused) return;
-        if (!frames.length) return;
-        if (currentFrameIndex >= frames.length - 1) return;
-
-        // resume animation loop after refresh + resume click
-        resumePlayback();
-    }, [running, paused]);
+    }, [engine.frames]);
 
     useEffect(() => {
         return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-
-            runningRef.current = false;
-            pausedRef.current = false;
+            engine.stopSort(true);
         };
     }, []);
 
     useEffect(() => {
-        if (running && frames.length === 0 && !loading) {
+        if (engine.running && engine.frames.length === 0 && !engine.loading) {
             console.warn("Frames lost during run - stopping safely");
-            stopSort();
+            engine.stopSort();
         }
-    }, [frames, running, loading]);
+    }, [engine.frames, engine.running, engine.loading]);
 
     const buildShareUrl = () => {
         const params = new URLSearchParams({
@@ -392,29 +317,24 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         originalArrayRef.current = [...newArr];
         setArray(newArr);
 
-        setSwaps(0);
-        setComparisons(0);
         setTimeComplexity("");
+        engine.stopSort();
     };
 
     const resetArray = () => {
-        if (running || loading) return;
+        if (engine.running || engine.loading) return;
         
         const base = originalArrayRef.current;
         if (!base || base.length === 0) return;
 
         setArray([...base]);
-        setSwaps(0);
-        setComparisons(0);
         setTimeComplexity("");
-        setHighlight({ i: null, j: null, swapped: false });
-        setFinished(false);
-        setFrames([]);
-        setCurrentFrameIndex(0);
+        engine.setCurrentFrameIndex(0);
+        engine.stopSort();
     };
 
     const shuffleArray = () => {
-        if (running || loading) return;
+        if (engine.running || engine.loading) return;
 
         const shuffled = [...array]
             .map(v => ({ v, r: Math.random() }))
@@ -424,287 +344,15 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         originalArrayRef.current = [...shuffled];
         setArray(shuffled);
 
-        setSwaps(0);
-        setComparisons(0);
         setTimeComplexity("");
-        setHighlight({ i: null, j: null, swapped: false });
-        setFinished(false);
-        setFrames([]);
-        setCurrentFrameIndex(0);
-    };
-
-    const flashSorted = async () => {
-        const duration = 500;
-        setHighlight({
-            region: {l: 0, r: array.length - 1},
-            color: "green"
-        });
-        await new Promise(resolve => setTimeout(resolve, duration));
-
-        setHighlight({
-            i: null,
-            j: null,
-            swapped: false,
-            region: null,
-            leftIndex: null,
-            rightIndex: null
-        });
-    };
-
-    const waitForResume = async () => {
-        while (pausedRef.current) {
-            await new Promise(resolve => setTimeout(resolve, 50));
-        }
-    };
-
-    const togglePause = () => {
-        setPaused(prev => {
-            pausedRef.current = !prev;
-            return !prev;
-        });
-    };
-
-    const resumePlayback = async () => {
-        if (!frames.length) return;
-        if (!runningRef.current) return;
-
-        for (let i = currentFrameIndex; i < frames.length; i++) {
-            if (!runningRef.current) return;
-
-            setCurrentFrameIndex(i);
-            const frame = frames[i];
-            if (!frame || !frame.array) continue;
-
-            setArray(frame.array);
-            setSwaps(frame.swaps);
-            setComparisons(frame.comparisons);
-            setHighlight(frame.highlight || { i: null, j: null, swapped: false });
-
-            await waitForResume();
-
-            const extraDelay = frame.highlight?.swapped ? speed * 2 : 0;
-            const delay = Math.max(speed + extraDelay, MAX_FPS_DELAY);
-            await new Promise(resolve =>
-                setTimeout(resolve, delay)
-            );
-        }
-
-        await flashSorted();
-
-        setRunning(false);
-        runningRef.current = false;
-        setPaused(false);
-        pausedRef.current = false;
-        setFinished(true);
-        setLoading(false);
-    };
-
-    const stopSort = () => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
-        }
-
-        setRunning(false);
-        setLoading(false);
-        runningRef.current = false;
-
-        setPaused(false);
-        pausedRef.current = false;
-
-        didRestoreRef.current = false;
-
-        setFinished(false);
-        setError("");
-        setTimeComplexity("");
-
-        setFrames([]);
-        setCurrentFrameIndex(0);
-        setHighlight({ i: null, j: null, swapped: false });
-    };
-
-    const applyFrame = (frame) => {
-        if (!frame) return;
-
-        setArray(frame.array);
-        setSwaps(frame.swaps);
-        setComparisons(frame.comparisons);
-        setHighlight(frame.highlight || { i: null, j: null, swapped: false });
-    };
-
-    const stepForward = () => {
-        if (!paused || currentFrameIndex >= frames.length - 1) return;
-        const nextIndex = currentFrameIndex + 1;
-        setCurrentFrameIndex(nextIndex);
-        applyFrame(frames[nextIndex]);
-    };
-
-    const stepBackward = () => {
-        if (!paused || currentFrameIndex <= 0) return;
-        const prevIndex = currentFrameIndex - 1;
-        setCurrentFrameIndex(prevIndex);
-        applyFrame(frames[prevIndex]);
-    };
-
-    const isSameFrame = (a, b) => {
-        if (!a || !b) return false;
-
-        // Compare arrays
-        for (let i = 0; i < a.array.length; i++) {
-            if (a.array[i] !== b.array[i]) return false;
-        }
-
-        // Compare highlights
-        return JSON.stringify(a.highlight) === JSON.stringify(b.highlight);
-    };
-
-    // All Sort Animation
-    const startSort = async () => {
-        if (runningRef.current || loading) return;
-
-        hardResetExecution(); // 🔑 KILL OLD RUNS
-
-        if (arraySize > 80) {
-            const ok = window.confirm(
-                "Large array may be slow. Continue?"
-            );
-            if (!ok) {
-                setRunning(false);
-                setLoading(false);
-                runningRef.current = false;
-                return;
-            }
-        }
-        if (runningRef.current) return;
-        setRunning(true);
-        setLoading(true);
-        setError("");
-        runningRef.current = true;
-        setFinished(false);
-        // Reset metrics
-        setSwaps(0);
-        setComparisons(0);
-        setTimeComplexity("");
-        setCurrentFrameIndex(0);
-        abortControllerRef.current = new AbortController();
-
-        let result;
-
-        try {
-            const response = await fetch(
-                `${process.env.REACT_APP_API_URL}/api/${ALGORITHM_API_MAP[algorithm]}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ array }),
-                    signal: abortControllerRef.current.signal
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            result = await response.json();
-        } catch (err) {
-            if (err.name !== "AbortError") {
-                console.error(err);
-                setError(
-                    err.message.includes("Invalid response")
-                        ? "Backend returned invalid data."
-                        : "Failed to run sort. Is the backend running?"
-                );
-            }
-            setRunning(false);
-            setLoading(false);
-            runningRef.current = false;
-            return;
-        }
-
-        if (
-            !result ||
-            !Array.isArray(result.frames) ||
-            result.frames.length === 0
-        ) {
-            throw new Error("Invalid response from backend");
-        }
-
-        const rawFrames = result.frames;
-        if (rawFrames.length > MAX_FRAMES) {
-            console.warn("Too many frames, truncating for safety");
-
-            alert(
-                `⚠️ Large animation detected (${rawFrames.length} frames).\n` +
-                `Playback will be optimized to prevent freezing.`
-            );
-        }
-        const optimized = [];
-
-        for (let i = 0; i < rawFrames.length && optimized.length < MAX_FRAMES; i++) {
-            if (i === 0 || !isSameFrame(rawFrames[i], rawFrames[i - 1])) {
-                optimized.push(rawFrames[i]);
-            }
-        }
-
-        setFrames(optimized);
-        setLoading(false);
-
-        // Animate frames
-        for (let i = 0; i < optimized.length; i++) {
-            if (!runningRef.current) return;
-
-            setCurrentFrameIndex(i);
-            const frame = optimized[i];
-            if (!frame || !frame.array) continue;
-
-            setArray(frame.array);
-            setSwaps(frame.swaps);
-            setComparisons(frame.comparisons);
-            setHighlight(frame.highlight || { i: null, j: null, swapped: false });
-
-            await waitForResume();
-
-            const extraDelay = frame.highlight?.swapped ? speed * 2 : 0;
-            const delay = Math.max(speed + extraDelay, MAX_FPS_DELAY);
-            await new Promise(resolve => 
-                setTimeout(resolve, delay)
-            );
-        }
-
-        await flashSorted();
-
-        setTimeComplexity(
-            typeof result.timeComplexity === "string"
-                ? result.timeComplexity
-                : "-"
-        );
-
-        setRunning(false);
-        runningRef.current = false;
-        setPaused(false);
-        pausedRef.current = false;
-        setFinished(true);
-        setLoading(false);
+        engine.setCurrentFrameIndex(0);
+        engine.stopSort();
     };
 
     const hardResetExecution = () => {
-        // Kill async loops
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
-        }
+        engine.stopSort();
 
-        runningRef.current = false;
-        pausedRef.current = false;
-
-        setRunning(false);
-        setPaused(false);
-        setLoading(false);
-        setFinished(false);
-
-        setFrames([]);
-        setCurrentFrameIndex(0);
-        setHighlight({ i: null, j: null, swapped: false });
+        setTimeComplexity("");
 
         // Clear persisted execution state
         const settings = getInitialSettings();
@@ -774,15 +422,15 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 style={{
                     height: `${num * 3}px`,
                     width: `${barWidth}px`,
-                    backgroundColor: getBarColor(idx, highlight),
+                    backgroundColor: getBarColor(idx, engine.highlight),
                     transform:
-                        highlight?.swapped && (idx === highlight.i || idx === highlight.j)
+                        engine.highlight?.swapped && (idx === engine.highlight.i || idx === engine.highlight.j)
                             ? "translateY(-8px)"
                             : "translateY(0)"
                 }}
             />
         ));
-    }, [array, highlight]);
+    }, [array, engine.highlight]);
 
     return (
         <div className="visualizer-container">
@@ -794,7 +442,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             <AlgorithmInfo algorithm={algorithm} />
 
             <div className="status-indicator">
-                {running ? "🔄 Sorting..." : finished ? "✅ Ready" : "🟢 Idle"}
+                {engine.running ? "🔄 Sorting..." : engine.finished ? "✅ Ready" : "🟢 Idle"}
             </div>
 
             <div className="metrics-panel" role="status" aria-live="polite">
@@ -825,13 +473,13 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                     </div>
                 </div>
 
-                {showHelp && !running && !loading && (
+                {showHelp && !engine.running && !engine.loading && (
                     <div className="hint">
                         ⌨ Space = Pause/Resume · N/B = Step · ← → = Step · ↑ ↓ = Speed · S = Start · R = Generate
                     </div>
                 )}
 
-                {paused && (
+                {engine.paused && (
                     <div className="paused-indicator" aria-live="polite">
                         ⏸ Paused
                     </div>
@@ -839,11 +487,11 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
 
                 <div className="metric-box" aria-label="Number of swaps">
                     <label>Swaps</label>
-                    <span>{swaps}</span>
+                    <span>{engine.swaps}</span>
                 </div>
                 <div className="metric-box" aria-label="Number of comparisons">
                     <label>Comparisons</label>
-                    <span>{comparisons}</span>
+                    <span>{engine.comparisons}</span>
                 </div>
                 <div className="metric-box" aria-label="Time complexity">
                     <label>Time Complexity</label>
@@ -851,7 +499,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 </div>
             </div>
 
-            {finished && (
+            {engine.finished && (
                 <div className="finished-indicator" aria-live="polite">
                     ✅ Sorting Complete
                 </div>
@@ -884,7 +532,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                     max="100"
                     value={arraySize}
                     onChange={(e) => setArraySize(Number(e.target.value))}
-                    disabled={running || paused || loading}
+                    disabled={engine.running || engine.paused || engine.loading}
                 />
 
                 <label>Speed: {speed} ms</label>
@@ -894,14 +542,14 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                     max="200"
                     value={speed}
                     onChange={(e) => setSpeed(Number(e.target.value))}
-                    disabled={running || paused || loading}
+                    disabled={engine.running || engine.paused || engine.loading}
                 />
 
                 <label>Algorithm</label>
                 <select
                     value={algorithm}
                     onChange={(e) => setAlgorithm(e.target.value)}
-                    disabled={running || paused || loading}
+                    disabled={engine.running || engine.paused || engine.loading}
                 >
                     <option value="bubble">Bubble Sort</option>
                     <option value="merge">Merge Sort</option>
@@ -912,88 +560,97 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             <button 
                 className="button"
                 onClick={generateArray}
-                disabled={running || paused || loading}
+                disabled={engine.running || engine.paused || engine.loading}
                 aria-label="Generate new random array"
             >
                 Generate Array
             </button>
             <button 
                 className="button"
-                onClick={startSort}
-                disabled={running || loading || array.length === 0}
+                onClick={
+                    engine.running
+                        ? engine.togglePause
+                        : engine.frames.length > 0 &&
+                          engine.currentFrameIndex < engine.frames.length - 1
+                            ? engine.startSort
+                            : engine.startSort
+                }
+                disabled={
+                    engine.loading ||
+                    (array.length === 0)
+                }
                 aria-label="Start sorting algorithm"
             >
-                Start {algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort
+                {engine.running
+                    ? engine.paused
+                        ? `Resume ${algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort`
+                        : `Pause ${algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort`
+                    : engine.frames.length > 0 &&
+                      engine.currentFrameIndex < engine.frames.length - 1
+                        ? `Resume ${algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort`
+                        : `Start ${algorithm.charAt(0).toUpperCase() + algorithm.slice(1)} Sort`}
             </button>
             <button
                 className="button"
                 onClick={shuffleArray}
-                disabled={running || paused || loading || array.length === 0}
+                disabled={engine.running || engine.paused || engine.loading || array.length === 0}
             >
                 Shuffle
             </button>
             <button
                 className="button"
                 onClick={resetArray}
-                disabled={running || paused || loading}
+                disabled={engine.running || engine.paused || engine.loading}
             >
                 Reset
             </button>
             <button
                 className="button"
                 onClick={copyShareLink}
-                disabled={running || loading}
+                disabled={engine.running || engine.loading}
                 aria-label="Share current visualizer state"
             >
                 🔗 Share State
             </button>
             <button
                 className="button"
-                onClick={togglePause}
-                disabled={!running}
-                aria-label="Pause or resume sorting"
-            >
-                {paused ? "Resume" : "Pause"}
-            </button>
-            <button
-                className="button"
-                onClick={stopSort}
-                disabled={!running && !loading}
+                onClick={engine.stopSort}
+                disabled={!engine.running && !engine.loading}
                 aria-label="Stop sorting"
             >
                 Stop
             </button>
             <button
                 className="button"
-                onClick={stepBackward}
-                disabled={!paused || currentFrameIndex === 0 || frames.length === 0}
+                onClick={engine.stepBackward}
+                disabled={!engine.paused || engine.currentFrameIndex === 0 || engine.frames.length === 0}
                 aria-label="Step backward"
             >
                 Step Backward
             </button>
             <button
                 className="button"
-                onClick={stepForward}
-                disabled={!paused || currentFrameIndex >= frames.length - 1 || frames.length === 0}
+                onClick={engine.stepForward}
+                disabled={!engine.paused || engine.currentFrameIndex >= engine.frames.length - 1 || engine.frames.length === 0}
                 aria-label="Step forward"
             >
                 Step Forward
             </button>
 
-            {loading && (
+            {engine.loading && (
                 <div className="loading-indicator" aria-live="polite">
                     ⏳ Loading frames from backend...
                 </div>
             )}
 
-            {error && (
+            {engine.error && (
                 <div className="error-indicator" role="alert">
-                    ❌ {error}
+                    ❌ {engine.error}
                     <div style={{ marginTop: "8px" }}>
                         <button
                             className="button"
-                            onClick={startSort}
-                            disabled={loading}
+                            onClick={engine.startSort}
+                            disabled={engine.loading}
                         >
                             Retry
                         </button>
@@ -1001,16 +658,16 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 </div>
             )}
 
-            {frames.length > MAX_TIMELINE_FRAMES && (
+            {engine.frames.length > MAX_TIMELINE_FRAMES && (
                 <div className="hint">
                     ⚠️ Timeline disabled for large animations
                 </div>
             )}
 
-            {frames.length > 0 && (
+            {engine.frames.length > 0 && (
                 <div className="timeline" role="region" aria-label="Timeline scrubber">
                     <div className="timeline-label">
-                        Frame {currentFrameIndex + 1} / {frames.length}
+                        Frame {engine.currentFrameIndex + 1} / {engine.frames.length}
                     </div>
 
                     <div className="timeline-track">
@@ -1018,31 +675,31 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                             type="range"
                             className="timeline-slider"
                             min="0"
-                            max={frames.length - 1}
-                            value={currentFrameIndex}
+                            max={engine.frames.length - 1}
+                            value={engine.currentFrameIndex}
                             disabled={
-                                !paused ||
-                                loading ||
-                                frames.length > MAX_TIMELINE_FRAMES
+                                !engine.paused ||
+                                engine.loading ||
+                                engine.frames.length > MAX_TIMELINE_FRAMES
                             }
                             onChange={(e) => {
                                 const idx = Number(e.target.value);
-                                setCurrentFrameIndex(idx);
-                                applyFrame(frames[idx]);
+                                engine.setCurrentFrameIndex(idx);
+                                engine.applyFrame(engine.frames[idx]);
                             }}
                         />
                             
                         <div
                             className="timeline-progress"
                             style={{
-                                width: `${(currentFrameIndex / (frames.length - 1)) * 100}%`
+                                width: `${(engine.currentFrameIndex / (engine.frames.length - 1)) * 100}%`
                             }}
                         />
                     </div> 
                 </div>
             )}
 
-            {loading && (
+            {engine.loading && (
                 <div className="global-loading-overlay">
                     <div className="loading-box">
                         ⏳ Processing algorithm...
