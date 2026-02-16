@@ -2,8 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import "./SortVisualizer.css";
 import AlgorithmInfo from "./AlgorithmInfo.js";
 import useSortEngine from "../hooks/useSortEngine.js";
+import { runBackendSort } from "../algorithms/runBackendSort.js";
 
 const MAX_TIMELINE_FRAMES = 3000;
+
+const algorithmRunnerMap = {
+    bubble: runBackendSort("bubble-sort"),
+    merge: runBackendSort("merge-sort"),
+    quick: runBackendSort("quick-sort")
+};
 
 const getInitialSettings = () => {
     try {
@@ -33,7 +40,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const didRestoreRef = useRef(false);
     const didInitAlgorithmRef = useRef(false);
     const engine = useSortEngine({
-        algorithm,
+        runAlgorithm: algorithmRunnerMap[algorithm],
         array,
         speed,
         setArray,

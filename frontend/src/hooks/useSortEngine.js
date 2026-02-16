@@ -3,14 +3,8 @@ import { useState, useRef } from "react";
 const MAX_FRAMES = 5000;
 const MAX_FPS_DELAY = 10;
 
-const ALGORITHM_API_MAP = {
-    bubble: "bubble-sort",
-    merge: "merge-sort",
-    quick: "quick-sort"
-};
-
 export default function useSortEngine({
-    algorithm,
+    runAlgorithm,
     array,
     speed,
     setArray,
@@ -159,28 +153,12 @@ export default function useSortEngine({
         let result;
 
         try {
-            const response = await fetch(
-                `${process.env.REACT_APP_API_URL}/api/${ALGORITHM_API_MAP[algorithm]}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ array }),
-                    signal: abortControllerRef.current.signal
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            result = await response.json();
+            result = await runAlgorithm(array, abortControllerRef.current.signal);
         } catch (err) {
             if (err.name !== "AbortError") {
                 console.error(err);
                 setError(
-                    err.message.includes("Invalid response")
-                        ? "Backend returned invalid data."
-                        : "Failed to run sort. Is the backend running?"
+                    err.message || "Failed to run algorithm."
                 );
             }
             setRunning(false);
