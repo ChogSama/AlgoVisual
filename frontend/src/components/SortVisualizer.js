@@ -35,16 +35,28 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     );
     const [timeComplexity, setTimeComplexity] = useState("");
     const [showHelp, setShowHelp] = useState(false);
+    const [compareMode, setCompareMode] = useState(false);
+    const [secondaryAlgorithm, setSecondaryAlgorithm] = useState("merge");
+    const [containerWidth, setContainerWidth] = useState(0);
+    const [secondaryArray, setSecondaryArray] = useState([]);
     const containerRef = useRef(null);
     const originalArrayRef = useRef([]);
     const didRestoreRef = useRef(false);
     const didInitAlgorithmRef = useRef(false);
+    const isGeneratingRef = useRef(false);
     const engine = useSortEngine({
         runAlgorithm: algorithmRunnerMap[algorithm],
         array,
         speed,
         setArray,
         setTimeComplexity
+    });
+    const secondaryEngine = useSortEngine({
+        runAlgorithm: algorithmRunnerMap[secondaryAlgorithm],
+        array: secondaryArray,
+        speed,
+        setArray: setSecondaryArray,
+        setTimeComplexity: () => {}
     });
 
     useEffect(() => {
@@ -151,7 +163,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
 
     useEffect(() => {
         // Skip recovery logic while restoring
-        if (!didRestoreRef.current) return;
+        if (!didRestoreRef.current || isGeneratingRef.current) return;
 
         // Recovery guard: if paused but array is empty or frames are missing
         const invalidRunningState =
@@ -291,6 +303,48 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         }
     }, [engine.frames, engine.running, engine.loading]);
 
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        requestAnimationFrame(() => {
+            setContainerWidth(containerRef.current.clientWidth);
+        });
+
+        const observer = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                setContainerWidth(entry.contentRect.width);
+            }
+        });
+
+        observer.observe(containerRef.current);
+
+        return () => observer.disconnect();
+    }, [compareMode]);
+
+    useEffect(() => {
+        if (!compareMode) return;
+
+        // ❗ Only sync when NOT sorting
+        if (engine.running || engine.loading) return;
+
+        setSecondaryArray([...array]);
+    }, [array, compareMode, engine.running, engine.loading]);
+
+    useEffect(() => {
+        if (isGeneratingRef.current) return;
+
+        // ❗ Don't reset during execution
+        if (secondaryEngine.running || secondaryEngine.loading) return;
+
+        const id = requestAnimationFrame(() => {
+            secondaryEngine.stopSort(true);
+            secondaryEngine.setFrames([]);
+            secondaryEngine.setCurrentFrameIndex(0);
+        });
+
+        return () => cancelAnimationFrame(id);
+    }, [secondaryArray]);
+
     const buildShareUrl = () => {
         const params = new URLSearchParams({
             size: arraySize,
@@ -315,6 +369,8 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const generateArray = () => {
         if (arraySize > 200) return;
 
+        isGeneratingRef.current = true;
+
         hardResetExecution();
 
         const newArr = Array.from({ length: arraySize }, () =>
@@ -324,23 +380,53 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         originalArrayRef.current = [...newArr];
         setArray(newArr);
 
+        if (compareMode) {
+            setSecondaryArray([...newArr]);
+        }
+
+        // Force both engines to sync with new array baseline
+        setTimeout(() => {
+            engine.setFrames([]);
+            engine.setCurrentFrameIndex(0);
+            engine.stopSort(true);
+
+            secondaryEngine.setFrames([]);
+            secondaryEngine.setCurrentFrameIndex(0);
+            secondaryEngine.stopSort(true);
+
+            requestAnimationFrame(() => {
+                if (containerRef.current) {
+                    setContainerWidth(containerRef.current.clientWidth);
+                }
+            });
+
+            isGeneratingRef.current = false;
+        }, 0);
+
         setTimeComplexity("");
         engine.stopSort();
     };
 
     const resetArray = () => {
+        secondaryEngine.stopSort();
+        secondaryEngine.setCurrentFrameIndex(0);
+
         if (engine.running || engine.loading) return;
         
         const base = originalArrayRef.current;
         if (!base || base.length === 0) return;
 
         setArray([...base]);
+        if (compareMode) setSecondaryArray([...base]);
         setTimeComplexity("");
         engine.setCurrentFrameIndex(0);
         engine.stopSort();
     };
 
     const shuffleArray = () => {
+        secondaryEngine.stopSort();
+        secondaryEngine.setCurrentFrameIndex(0);
+
         if (engine.running || engine.loading) return;
 
         const shuffled = [...array]
@@ -350,6 +436,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
 
         originalArrayRef.current = [...shuffled];
         setArray(shuffled);
+        if (compareMode) setSecondaryArray([...shuffled]);
 
         setTimeComplexity("");
         engine.setCurrentFrameIndex(0);
@@ -357,6 +444,10 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     };
 
     const hardResetExecution = () => {
+        secondaryEngine.stopSort();
+        secondaryEngine.setFrames([]);
+        secondaryEngine.setCurrentFrameIndex(0);
+
         engine.stopSort();
 
         setTimeComplexity("");
@@ -409,17 +500,14 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     }
 
     const barWidth = React.useMemo(() => {
-        if (!containerRef.current || array.length === 0) return 10;
-        
-        const containerWidth = containerRef.current.clientWidth;
+        if (containerWidth <= 0 || array.length === 0) return 4;
+
         const gap = 2;
-        const maxBars = array.length;
-        
         return Math.max(
             2,
-            Math.floor(containerWidth / maxBars) - gap
+            Math.floor(containerWidth / array.length) - gap
         );
-    }, [array.length]);
+    }, [containerWidth, array.length, compareMode]);
 
     const bars = React.useMemo(() => {
         return array.map((num, idx) => (
@@ -429,6 +517,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 style={{
                     height: `${num * 3}px`,
                     width: `${barWidth}px`,
+                    left: `${idx * (barWidth + 2)}px`,
                     backgroundColor: getBarColor(idx, engine.highlight),
                     transform:
                         engine.highlight?.swapped && (idx === engine.highlight.i || idx === engine.highlight.j)
@@ -437,7 +526,26 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 }}
             />
         ));
-    }, [array, engine.highlight]);
+    }, [array, engine.highlight, barWidth]);
+
+    const secondaryBars = React.useMemo(() => {
+        return secondaryArray.map((num, idx) => (
+            <div
+                key={`secondary-${idx}`}
+                className="array-bar"
+                style={{
+                    height: `${num * 3}px`,
+                    width: `${barWidth}px`,
+                    left: `${idx * (barWidth + 2)}px`,
+                    backgroundColor: getBarColor(idx, secondaryEngine.highlight),
+                    transform:
+                        secondaryEngine.highlight?.swapped && (idx === secondaryEngine.highlight.i || idx === secondaryEngine.highlight.j)
+                            ? "translateY(-8px)"
+                            : "translateY(0)"
+                }}
+            />
+        ));
+    }, [secondaryArray, secondaryEngine.highlight, barWidth, compareMode]);
 
     return (
         <div className="visualizer-container">
@@ -506,19 +614,40 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 </div>
             </div>
 
+            {compareMode && (
+                <div className="metrics-panel secondary">
+                    <div className="metric-box">
+                        <label>Secondary Swaps</label>
+                        <span>{secondaryEngine.swaps}</span>
+                    </div>
+                    <div className="metric-box">
+                        <label>Secondary Comparisons</label>
+                        <span>{secondaryEngine.comparisons}</span>
+                    </div>
+                </div>
+            )}
+
             {engine.finished && (
                 <div className="finished-indicator" aria-live="polite">
                     ✅ Sorting Complete
                 </div>
             )}
 
-            <div className="array-container" ref={containerRef}>
-                {array.length === 0 ? (
-                    <div className="empty-state">
-                        Generate an array to begin
+            <div className="compare-wrapper">
+                <div className="array-container" ref={containerRef}>
+                    {array.length === 0 ? (
+                        <div className="empty-state">
+                            Generate an array to begin
+                        </div>
+                    ) : (
+                        bars
+                    )}
+                </div>
+
+                {compareMode && (
+                    <div className="array-container secondary">
+                        {secondaryBars}
                     </div>
-                ) : (
-                    bars
                 )}
             </div>
 
@@ -529,6 +658,14 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 aria-label="Toggle keyboard shortcuts help"
             >
                 ❓ Shortcuts
+            </button>
+
+            <button
+                className="button"
+                onClick={() => setCompareMode(v => !v)}
+                disabled={engine.running || engine.paused}
+            >
+                {compareMode ? "Disable Compare Mode" : "Enable Compare Mode"}
             </button>
 
             <div className="controls" role="group" aria-label="Sorting controls">
@@ -562,6 +699,21 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                     <option value="merge">Merge Sort</option>
                     <option value="quick">Quick Sort</option>
                 </select>
+
+                {compareMode && (
+                    <>
+                        <label>Compare With</label>
+                        <select
+                            value={secondaryAlgorithm}
+                            onChange={(e) => setSecondaryAlgorithm(e.target.value)}
+                            disabled={engine.running || engine.paused || engine.loading}
+                        >
+                            <option value="bubble">Bubble Sort</option>
+                            <option value="merge">Merge Sort</option>
+                            <option value="quick">Quick Sort</option>
+                        </select>
+                    </>
+                )}
             </div>
 
             <button 
@@ -574,14 +726,15 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             </button>
             <button 
                 className="button"
-                onClick={
-                    engine.running
-                        ? engine.togglePause
-                        : engine.frames.length > 0 &&
-                          engine.currentFrameIndex < engine.frames.length - 1
-                            ? engine.startSort
-                            : engine.startSort
-                }
+                onClick={() => {
+                    if (engine.running) {
+                        engine.togglePause();
+                        if (compareMode) secondaryEngine.togglePause();
+                    } else {
+                        engine.startSort();
+                        if (compareMode) secondaryEngine.startSort();
+                    }
+                }}
                 disabled={
                     engine.loading ||
                     (array.length === 0)
@@ -621,7 +774,10 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             </button>
             <button
                 className="button"
-                onClick={engine.stopSort}
+                onClick={() => {
+                    engine.stopSort();
+                    secondaryEngine.stopSort();
+                }}
                 disabled={!engine.running && !engine.loading}
                 aria-label="Stop sorting"
             >

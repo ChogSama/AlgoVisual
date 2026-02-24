@@ -11,25 +11,29 @@
 }
 
 .array-container {
-    display: flex;
+    display: block;
     gap: 2px;
     justify-content: center;
     align-items: flex-end;
     margin-bottom: 16px;
     height: 300px;
-    width: 100%;
     overflow: hidden;
+    min-height: 300px;
+    flex: 1;
+    min-width: 0;
+    position: relative;
 }
 
 .array-bar {
     width: 20px;
     margin: 0 2px;
-    display: inline-block;
     background-color: #4ea3ff;
     transition: 
         height 0.15s ease,
         background-color 0.12s ease,
         transform 0.15s ease;
+    position: absolute;
+    bottom: 0;
 }
 
 .bar-compare {
@@ -412,4 +416,20 @@ input:focus-visible {
 .legend-item,
 .controls label {
     color: var(--text);
+}
+
+.compare-wrapper {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.array-container.secondary {
+    border: 1px dashed var(--border);
+    opacity: 0.95;
+}
+
+.metrics-panel.secondary {
+    margin-top: 10px;
+    border: 1px dashed var(--accent);
 }
