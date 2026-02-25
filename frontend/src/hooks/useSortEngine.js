@@ -16,6 +16,8 @@ export default function useSortEngine({
     const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
     const [swaps, setSwaps] = useState(0);
     const [comparisons, setComparisons] = useState(0);
+    const [accesses, setAccesses] = useState(0);
+    const [elapsedTime, setElapsedTime] = useState(0);
     const [highlight, setHighlight] = useState({ i: null, j: null, swapped: false });
     const [finished, setFinished] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -55,6 +57,7 @@ export default function useSortEngine({
         setArray(frame.array);
         setSwaps(frame.swaps);
         setComparisons(frame.comparisons);
+        setAccesses(frame.accesses || 0);
         setHighlight(frame.highlight || { i: null, j: null, swapped: false });
     };
 
@@ -146,6 +149,8 @@ export default function useSortEngine({
         // Reset metrics
         setSwaps(0);
         setComparisons(0);
+        setAccesses(0);
+        setElapsedTime(0);
         setTimeComplexity("");
         setCurrentFrameIndex(0);
         abortControllerRef.current = new AbortController();
@@ -206,6 +211,7 @@ export default function useSortEngine({
             setArray(frame.array);
             setSwaps(frame.swaps);
             setComparisons(frame.comparisons);
+            setAccesses(frame.accesses || 0);
             setHighlight(frame.highlight || { i: null, j: null, swapped: false });
 
             await waitForResume();
@@ -223,6 +229,12 @@ export default function useSortEngine({
             typeof result.timeComplexity === "string"
                 ? result.timeComplexity
                 : "-"
+        );
+
+        setElapsedTime(
+            typeof result.executionTime === "number"
+                ? Number(result.executionTime.toFixed(3))
+                : 0
         );
 
         setRunning(false);
@@ -254,6 +266,8 @@ export default function useSortEngine({
         currentFrameIndex,
         swaps,
         comparisons,
+        accesses,
+        elapsedTime,
         highlight,
         finished,
         loading,

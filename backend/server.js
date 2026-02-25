@@ -51,10 +51,12 @@ app.post("/api/bubble-sort", (req, res) => {
         const { array } = req.body;
         const error = validateArray(array);
         if (error) return res.status(400).json({ error });
+        const startTime = performance.now();
 
         let arr = [...array];
         let swaps = 0;
         let comparisons = 0;
+        let accesses = 0;
         let frames = [];
 
         const pushFrame = (i = null, j = null, swapped = false) => {
@@ -63,6 +65,7 @@ app.post("/api/bubble-sort", (req, res) => {
                     array: [...arr],
                     swaps,
                     comparisons,
+                    accesses,
                     highlight: { i, j, swapped }
                 });
             }
@@ -72,10 +75,12 @@ app.post("/api/bubble-sort", (req, res) => {
 
         for (let i = 0; i < arr.length - 1; i++) {
             for (let j = 0; j < arr.length - i - 1; j++) {
+                accesses += 2; // reading arr[j] and arr[j + 1]
                 comparisons++;
                 pushFrame(j, j + 1, false);
 
                 if (arr[j] > arr[j + 1]) {
+                    accesses += 4; // 2 reads + 2 writes
                     [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
                     swaps++;
                     pushFrame(j, j + 1, true);
@@ -83,7 +88,13 @@ app.post("/api/bubble-sort", (req, res) => {
             }
         }
 
-        res.json({ frames, timeComplexity: "O(n^2)" });
+        const executionTime = performance.now() - startTime;
+
+        res.json({
+            frames,
+            timeComplexity: "O(n^2)",
+            executionTime
+        });
     } catch (err) {
         res.status(500).json({ error: "Bubble Sort failed." });
     }
@@ -95,10 +106,12 @@ app.post("/api/merge-sort", (req, res) => {
         const { array } = req.body;
         const error = validateArray(array);
         if (error) return res.status(400).json({ error });
+        const startTime = performance.now();
 
         let arr = [...array];
         let frames = [];
         let comparisons = 0;
+        let accesses = 0;
 
         const pushFrame = (highlight = {}) => {
             if (frames.length < MAX_FRAMES) {
@@ -106,6 +119,7 @@ app.post("/api/merge-sort", (req, res) => {
                     array: [...arr],
                     swaps: 0, // Merge sort has no swaps
                     comparisons,
+                    accesses,
                     highlight
                 });
             }
@@ -125,6 +139,7 @@ app.post("/api/merge-sort", (req, res) => {
             let i = 0, j = 0, k = l;
 
             while (i < left.length && j < right.length) {
+                accesses += 2; // read left[i], right[j]
                 comparisons++;
                 pushFrame({
                     region: {l, m, r},
@@ -134,8 +149,10 @@ app.post("/api/merge-sort", (req, res) => {
                 });
 
                 if (left[i] < right[j]) {
+                    accesses += 2; // read + write
                     arr[k++] = left[i++];
                 } else {
+                    accesses += 2; // read + write
                     arr[k++] = right[j++];
                 }
 
@@ -145,6 +162,7 @@ app.post("/api/merge-sort", (req, res) => {
             }
 
             while (i < left.length) {
+                accesses += 2;
                 arr[k++] = left[i++];
                 pushFrame({
                     region: {l, m, r},
@@ -152,9 +170,10 @@ app.post("/api/merge-sort", (req, res) => {
             }
 
             while (j < right.length) {
+                accesses += 2;
                 arr[k++] = right[j++];
                 pushFrame({
-                region: {l, m, r},
+                    region: {l, m, r},
                 });
             }
         };
@@ -162,7 +181,13 @@ app.post("/api/merge-sort", (req, res) => {
         pushFrame();
         mergeSort(0, arr.length - 1);
 
-        res.json({ frames, timeComplexity: "O(n log n)" });
+        const executionTime = performance.now() - startTime;
+
+        res.json({
+            frames,
+            timeComplexity: "O(n log n)",
+            executionTime
+        });
     } catch (err) {
         res.status(500).json({ error: "Merge Sort failed." });
     }
@@ -174,11 +199,13 @@ app.post("/api/quick-sort", (req, res) => {
         const { array } = req.body;
         const error = validateArray(array);
         if (error) return res.status(400).json({ error });
+        const startTime = performance.now();
 
         let arr = [...array];
         let frames = [];
         let comparisons = 0;
         let swaps = 0;
+        let accesses = 0;
 
         const pushFrame = (highlight = {}) => {
             if (frames.length < MAX_FRAMES) {
@@ -186,6 +213,7 @@ app.post("/api/quick-sort", (req, res) => {
                     array: [...arr],
                     swaps,
                     comparisons,
+                    accesses,
                     highlight
                 });
             }
@@ -197,9 +225,11 @@ app.post("/api/quick-sort", (req, res) => {
             let i = l - 1;
 
             for (let j = l; j < r; j++) {
+                accesses += 2; // arr[j] + pivot read
                 comparisons++;
                 if (arr[j] < pivot) {
                     i++;
+                    accesses += 4;
                     [arr[i], arr[j]] = [arr[j], arr[i]];
                     swaps++;
                     pushFrame({
@@ -210,6 +240,7 @@ app.post("/api/quick-sort", (req, res) => {
                 }
             }
 
+            accesses += 4;
             [arr[i + 1], arr[r]] = [arr[r], arr[i + 1]];
             swaps++;
             pushFrame({
@@ -225,7 +256,13 @@ app.post("/api/quick-sort", (req, res) => {
         pushFrame();
         quickSort(0, arr.length - 1);
 
-        res.json({ frames, timeComplexity: "O(n log n)" });
+        const executionTime = performance.now() - startTime;
+
+        res.json({
+            frames,
+            timeComplexity: "O(n log n)",
+            executionTime
+        });
     } catch (err) {
         res.status(500).json({ error: "Quick Sort failed." });
     }

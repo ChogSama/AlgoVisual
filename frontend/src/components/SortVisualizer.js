@@ -608,6 +608,14 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                     <label>Comparisons</label>
                     <span>{engine.comparisons}</span>
                 </div>
+                <div className="metric-box">
+                    <label>Accesses</label>
+                    <span>{engine.accesses}</span>
+                </div>
+                <div className="metric-box">
+                    <label>Time</label>
+                    <span>{engine.elapsedTime} ms</span>
+                </div>
                 <div className="metric-box" aria-label="Time complexity">
                     <label>Time Complexity</label>
                     <span>{timeComplexity || "-"}</span>
@@ -623,6 +631,14 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                     <div className="metric-box">
                         <label>Secondary Comparisons</label>
                         <span>{secondaryEngine.comparisons}</span>
+                    </div>
+                    <div className="metric-box">
+                        <label>Secondary Accesses</label>
+                        <span>{secondaryEngine.accesses}</span>
+                    </div>
+                    <div className="metric-box">
+                        <label>Secondary Time</label>
+                        <span>{secondaryEngine.elapsedTime} ms</span>
                     </div>
                 </div>
             )}
