@@ -105,7 +105,7 @@ export default function useSortEngine({
     };
 
     // All Sort Animation
-    const startSort = async () => {
+    const startSort = async (externalArray = null) => {
         // 🔁 Resume from persisted frames if they exist
         if (frames.length > 0 && currentFrameIndex < frames.length - 1) {
             if (runningRef.current) return;
@@ -158,7 +158,8 @@ export default function useSortEngine({
         let result;
 
         try {
-            result = await runAlgorithm(array, abortControllerRef.current.signal);
+            const inputArray = externalArray ?? array;
+            result = await runAlgorithm(inputArray, abortControllerRef.current.signal);
         } catch (err) {
             if (err.name !== "AbortError") {
                 console.error(err);

@@ -36,6 +36,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const [timeComplexity, setTimeComplexity] = useState("");
     const [showHelp, setShowHelp] = useState(false);
     const [compareMode, setCompareMode] = useState(false);
+    const [compareBaseArray, setCompareBaseArray] = useState(null);
     const [secondaryAlgorithm, setSecondaryAlgorithm] = useState("merge");
     const [containerWidth, setContainerWidth] = useState(0);
     const [secondaryArray, setSecondaryArray] = useState([]);
@@ -323,12 +324,11 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
 
     useEffect(() => {
         if (!compareMode) return;
-
-        // ❗ Only sync when NOT sorting
         if (engine.running || engine.loading) return;
+        if (compareBaseArray) return; // 🔒 snapshot activate
 
         setSecondaryArray([...array]);
-    }, [array, compareMode, engine.running, engine.loading]);
+    }, [array, compareMode, engine.running, engine.loading, compareBaseArray]);
 
     useEffect(() => {
         if (isGeneratingRef.current) return;
@@ -405,6 +405,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
 
         setTimeComplexity("");
         engine.stopSort();
+        setCompareBaseArray(null);
     };
 
     const resetArray = () => {
@@ -421,6 +422,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         setTimeComplexity("");
         engine.setCurrentFrameIndex(0);
         engine.stopSort();
+        setCompareBaseArray(null);
     };
 
     const shuffleArray = () => {
@@ -441,6 +443,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         setTimeComplexity("");
         engine.setCurrentFrameIndex(0);
         engine.stopSort();
+        setCompareBaseArray(null);
     };
 
     const hardResetExecution = () => {
@@ -747,8 +750,15 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                         engine.togglePause();
                         if (compareMode) secondaryEngine.togglePause();
                     } else {
-                        engine.startSort();
-                        if (compareMode) secondaryEngine.startSort();
+                        if (compareMode) {
+                            const snapshot = [...array];
+                            setCompareBaseArray(snapshot);
+
+                            engine.startSort(snapshot);
+                            secondaryEngine.startSort(snapshot);
+                        } else {
+                            engine.startSort();
+                        }
                     }
                 }}
                 disabled={
