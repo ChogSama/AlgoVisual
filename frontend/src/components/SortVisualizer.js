@@ -40,6 +40,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const [secondaryAlgorithm, setSecondaryAlgorithm] = useState("merge");
     const [containerWidth, setContainerWidth] = useState(0);
     const [secondaryArray, setSecondaryArray] = useState([]);
+    const [winner, setWinner] = useState(null);
     const containerRef = useRef(null);
     const originalArrayRef = useRef([]);
     const didRestoreRef = useRef(false);
@@ -331,6 +332,28 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     }, [array, compareMode, engine.running, engine.loading, compareBaseArray]);
 
     useEffect(() => {
+        if (!compareMode) return;
+        if (!engine.finished || !secondaryEngine.finished) return;
+
+        const timeA = engine.elapsedTime;
+        const timeB = secondaryEngine.elapsedTime;
+
+        if (timeA === null || timeB === null) return;
+
+        if (timeA === timeB) {
+            setWinner("tie");
+        } else {
+            setWinner(timeA < timeB ? "A" : "B");
+        }
+    }, [
+        compareMode,
+        engine.finished,
+        secondaryEngine.finished,
+        engine.elapsedTime,
+        secondaryEngine.elapsedTime
+    ]);
+
+    useEffect(() => {
         if (isGeneratingRef.current) return;
 
         // ❗ Don't reset during execution
@@ -406,6 +429,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         setTimeComplexity("");
         engine.stopSort();
         setCompareBaseArray(null);
+        setWinner(null);
     };
 
     const resetArray = () => {
@@ -423,6 +447,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         engine.setCurrentFrameIndex(0);
         engine.stopSort();
         setCompareBaseArray(null);
+        setWinner(null);
     };
 
     const shuffleArray = () => {
@@ -444,6 +469,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
         engine.setCurrentFrameIndex(0);
         engine.stopSort();
         setCompareBaseArray(null);
+        setWinner(null);
     };
 
     const hardResetExecution = () => {
@@ -563,46 +589,46 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 {engine.running ? "🔄 Sorting..." : engine.finished ? "✅ Ready" : "🟢 Idle"}
             </div>
 
-            <div className="metrics-panel" role="status" aria-live="polite">
-                <div className="legend">
-                    <div className="legend-item">
-                        <span className="legend-color default"></span>
-                        <span>Unsorted</span>
-                    </div>
-
-                    <div className="legend-item">
-                        <span className="legend-color compare"></span>
-                        <span>Comparing</span>
-                    </div>
-
-                    <div className="legend-item">
-                        <span className="legend-color swap"></span>
-                        <span>Swap</span>
-                    </div>
-
-                    <div className="legend-item">
-                        <span className="legend-color region"></span>
-                        <span>Active Region</span>
-                    </div>
-
-                    <div className="legend-item">
-                        <span className="legend-color sorted"></span>
-                        <span>Sorted</span>
-                    </div>
+            <div className="legend">
+                <div className="legend-item">
+                    <span className="legend-color default"></span>
+                    <span>Unsorted</span>
                 </div>
 
-                {showHelp && !engine.running && !engine.loading && (
-                    <div className="hint">
-                        ⌨ Space = Pause/Resume · N/B = Step · ← → = Step · ↑ ↓ = Speed · S = Start · R = Generate
-                    </div>
-                )}
+                <div className="legend-item">
+                    <span className="legend-color compare"></span>
+                    <span>Comparing</span>
+                </div>
 
-                {engine.paused && (
-                    <div className="paused-indicator" aria-live="polite">
-                        ⏸ Paused
-                    </div>
-                )}
+                <div className="legend-item">
+                    <span className="legend-color swap"></span>
+                    <span>Swap</span>
+                </div>
 
+                <div className="legend-item">
+                    <span className="legend-color region"></span>
+                    <span>Active Region</span>
+                </div>
+
+                <div className="legend-item">
+                    <span className="legend-color sorted"></span>
+                    <span>Sorted</span>
+                </div>
+            </div>
+
+            {showHelp && !engine.running && !engine.loading && (
+                <div className="hint">
+                    ⌨ Space = Pause/Resume · N/B = Step · ← → = Step · ↑ ↓ = Speed · S = Start · R = Generate
+                </div>
+            )}
+
+            {engine.paused && (
+                <div className="paused-indicator" aria-live="polite">
+                    ⏸ Paused
+                </div>
+            )}
+
+            <div className={`metrics-panel ${winner === "A" ? "winner-panel" : ""}`} role="status" aria-live="polite">
                 <div className="metric-box" aria-label="Number of swaps">
                     <label>Swaps</label>
                     <span>{engine.swaps}</span>
@@ -626,7 +652,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             </div>
 
             {compareMode && (
-                <div className="metrics-panel secondary">
+                <div className={`metrics-panel secondary ${winner === "B" ? "winner-panel" : ""}`}>
                     <div className="metric-box">
                         <label>Secondary Swaps</label>
                         <span>{secondaryEngine.swaps}</span>
@@ -643,6 +669,12 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                         <label>Secondary Time</label>
                         <span>{secondaryEngine.elapsedTime} ms</span>
                     </div>
+                </div>
+            )}
+
+            {compareMode && winner === "tie" && (
+                <div className="tie-indicator">
+                    🤝 Tie
                 </div>
             )}
 
@@ -751,6 +783,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                         if (compareMode) secondaryEngine.togglePause();
                     } else {
                         if (compareMode) {
+                            setWinner(null);
                             const snapshot = [...array];
                             setCompareBaseArray(snapshot);
 

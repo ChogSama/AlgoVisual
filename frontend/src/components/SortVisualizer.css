@@ -433,3 +433,14 @@ input:focus-visible {
     margin-top: 10px;
     border: 1px dashed var(--accent);
 }
+
+.winner-panel {
+    border: 2px solid #22c55e !important;
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+}
+
+.tie-indicator {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #eab308;
+}
