@@ -37,6 +37,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
     const [showHelp, setShowHelp] = useState(false);
     const [compareMode, setCompareMode] = useState(false);
     const [compareBaseArray, setCompareBaseArray] = useState(null);
+    const fairnessLocked = compareBaseArray !== null;
     const [secondaryAlgorithm, setSecondaryAlgorithm] = useState("merge");
     const [containerWidth, setContainerWidth] = useState(0);
     const [secondaryArray, setSecondaryArray] = useState([]);
@@ -714,10 +715,16 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
             <button
                 className="button"
                 onClick={() => setCompareMode(v => !v)}
-                disabled={engine.running || engine.paused}
+                disabled={engine.running || engine.paused || fairnessLocked}
             >
                 {compareMode ? "Disable Compare Mode" : "Enable Compare Mode"}
             </button>
+
+            {fairnessLocked && compareMode && (
+                <div className="fairness-lock">
+                    🔒 Fairness Lock enabled - comparison settings cannot be changed until a new dataset is generated or reset.
+                </div>
+            )}
 
             <div className="controls" role="group" aria-label="Sorting controls">
                 <label>Array Size: {arraySize}</label>
@@ -744,7 +751,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                 <select
                     value={algorithm}
                     onChange={(e) => setAlgorithm(e.target.value)}
-                    disabled={engine.running || engine.paused || engine.loading}
+                    disabled={engine.running || engine.paused || engine.loading || fairnessLocked}
                 >
                     <option value="bubble">Bubble Sort</option>
                     <option value="merge">Merge Sort</option>
@@ -757,7 +764,7 @@ function SortVisualizer({ initialAlgorithm = "bubble"}) {
                         <select
                             value={secondaryAlgorithm}
                             onChange={(e) => setSecondaryAlgorithm(e.target.value)}
-                            disabled={engine.running || engine.paused || engine.loading}
+                            disabled={engine.running || engine.paused || engine.loading || fairnessLocked}
                         >
                             <option value="bubble">Bubble Sort</option>
                             <option value="merge">Merge Sort</option>

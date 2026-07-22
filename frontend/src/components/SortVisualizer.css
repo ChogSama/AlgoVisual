@@ -444,3 +444,17 @@ input:focus-visible {
     font-weight: bold;
     color: #eab308;
 }
+
+.fairness-lock {
+    margin: 12px auto;
+    padding: 10px 14px;
+    max-width: 700px;
+
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 600;
+}
